@@ -18,7 +18,6 @@ package org.ainslec.gwt.promptly.core.client;
 import java.util.ArrayList;
 
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.RepeatingCommand;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.BRElement;
 import com.google.gwt.dom.client.DivElement;
@@ -53,7 +52,7 @@ public class PromptlyPanel extends Composite {
 
    private static PanelListener DEFAULT_LISTENER = new DefaultPanelListener();
    
-   private PanelListener _listener = DEFAULT_LISTENER;
+   private PanelListener             _listener           = DEFAULT_LISTENER;
 	private boolean                   _isCommandLineMode  = true;
 	private boolean                   _collectKeyEvents   = true;
 	private boolean                   _collectMouseEvents = true;
@@ -63,7 +62,6 @@ public class PromptlyPanel extends Composite {
 	protected FlowPanel               _mainTextFlowDiv;    // Panel that has max width, but stretches to use all available height
 	private FlowPanel                 _commandLineWrapper;
 	private TextBox                   _commandLineTextBox;
-
 	  
    private int _commandCacheLimit               = 0;
    private int _commandCacheNextInsertionIndex  = 0;
@@ -100,8 +98,8 @@ public class PromptlyPanel extends Composite {
 	public PromptlyPanel() {
 		_outerPanel = new FlowPanel() {
 		   
-		   RepeatingCommand _cmd = null;
-		   boolean _flashEnabled = true;
+		   //RepeatingCommand _cmd = null;
+		  // boolean _flashEnabled = true;
 		   
 			@Override
 	      public void onAttach() {
@@ -109,24 +107,24 @@ public class PromptlyPanel extends Composite {
               // TODO :: Use mousedown, mouseup, and mousemove events to filter out drag events 
               //         (for selecting text for copy paste purposes)
 	 		     super.addDomHandler(_clickHandler, ClickEvent.getType());
-	 		     final Scheduler scheduler = Scheduler.get();
-	 		     _cmd = new RepeatingCommand() {
-               @Override
-               public boolean execute() {
-                  // TODO Toggle flash attributes ..... 
-                  return _flashEnabled;
-               }
-            };
-            scheduler.scheduleFixedPeriod(_cmd, 640 /* milliseconds */);
+//	 		     final Scheduler scheduler = Scheduler.get();
+//	 		     _cmd = new RepeatingCommand() {
+//               @Override
+//               public boolean execute() {
+//                  // TODO Toggle flash attributes ..... 
+//                  return _flashEnabled;
+//               }
+//            };
+            //scheduler.scheduleFixedPeriod(_cmd, 640 /* milliseconds */);
 	      }
 			
 			@Override
 			protected void onDetach() {
 			   super.onDetach();
-			   if (_cmd != null) {
-			      _flashEnabled = false;
-			      _cmd          = null;
-			   }
+//			   if (_cmd != null) {
+//			      _flashEnabled = false;
+//			      _cmd          = null;
+//			   }
 			}
 			
 		};
@@ -200,30 +198,26 @@ public class PromptlyPanel extends Composite {
                      int nativeKeyCode = event.getNativeKeyCode();
       					if (nativeKeyCode == 13 /* carriage return */) {
       						String innerText = _commandLineTextBox.getText();
-      						
       						recordInputInCacheIfAppropriate(innerText);
-      						
       						_listener.onTextEntered(PromptlyPanel.this, innerText);
-      						
       						if (isClearTextboxOnCarriageReturnPressed()) {
       							_commandLineTextBox.setText("");
       						}
-      						
       						event.stopPropagation();
+      					} else if (nativeKeyCode == KeyCodes.KEY_TAB) {
+                       String innerText = _commandLineTextBox.getText();
+                        recordInputInCacheIfAppropriate(innerText);
+                        _listener.onTabPressed(PromptlyPanel.this, innerText);
+                        event.stopPropagation();
       					} else {
       					   if (_commandCacheLimit != 0) {
-
                            if (nativeKeyCode == KeyCodes.KEY_DOWN) {
-      					         
       					         String historicalCommandText = accessMoreRecentCommandText();
-      					         
       					         if (historicalCommandText != null) {
       					            _commandLineTextBox.setText(historicalCommandText);
       					            event.stopPropagation();
       					            event.preventDefault();
-      					            
       					         }
-      					         
       					      } else if (nativeKeyCode == KeyCodes.KEY_UP) {
       					         String historicalCommandText = accessOlderCommandText();
       					         

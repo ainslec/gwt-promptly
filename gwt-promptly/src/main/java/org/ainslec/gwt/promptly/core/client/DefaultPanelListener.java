@@ -27,4 +27,5 @@ public class DefaultPanelListener implements PanelListener {
    @Override public void onClickWhenInputBoxNotShowing(PromptlyPanel panel, int clientX, int clientY) { }
    @Override public void onKeypressWhenInputBoxNotShowing(PromptlyPanel panel, char c) { }
    @Override public void onControlCPressedInAnyMode(PromptlyPanel panel) {}
+   @Override public void onTabPressed(PromptlyPanel panel, String text) { }
 }

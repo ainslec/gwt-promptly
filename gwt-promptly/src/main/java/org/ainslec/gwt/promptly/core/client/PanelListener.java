@@ -27,5 +27,6 @@ public interface PanelListener {
    //         cursor keys, enter key, backspace key, numbers, space bar and regular keys.
    public void onKeypressWhenInputBoxNotShowing(PromptlyPanel panel, char c);
 	public void onTextEntered(PromptlyPanel panel, String text);
+	public void onTabPressed(PromptlyPanel panel, String text);
    public void onControlCPressedInAnyMode(PromptlyPanel panel);
 }

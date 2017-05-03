@@ -18,18 +18,18 @@ package org.ainslec.gwt.promptly.demo.client;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.user.client.ui.RootLayoutPanel;
 
-
 /**
  * 
  * @author Chris Ainsley
  *
  */
 public class PromptlyDemo  implements EntryPoint {
-
+   
    @Override
    public void onModuleLoad() {
       RootLayoutPanel rp = RootLayoutPanel.get();
       rp.add(new DemoUI());
    }
+   
 
 }
