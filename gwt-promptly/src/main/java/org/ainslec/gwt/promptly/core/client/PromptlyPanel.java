@@ -56,8 +56,8 @@ public class PromptlyPanel extends Composite {
    
    private PromptlyListener             _listener           = DEFAULT_LISTENER;
 	private boolean                   _isCommandLineMode  = true;
-	private boolean                   _collectKeyEvents   = true;
-	private boolean                   _collectMouseEvents = true;
+	private boolean                   _collectKeyEventsWhenInNonCommandLineMode   = true;
+	private boolean                   _collectMouseEventsWhenInNonCommandLineMode = true;
 
    private FlowPanel                 _caret;
 	private FlowPanel                 _outerPanel;         // Panel that fills all available space
@@ -68,7 +68,10 @@ public class PromptlyPanel extends Composite {
    private int _commandCacheLimit               = 0;
    private int _commandCacheNextInsertionIndex  = 0;
    private boolean _cacheOverflowed             = false;
+   private boolean _blockingHyperlinks;
    
+
+
    private int _commandCacheUserCursorIndex     = -1; // The is the next index to be displayed to the user
    private int _commandCacheUserCursorLimit     = -1; // This is the limit of the cursor, so we don't loop around indefinately
    
@@ -84,7 +87,7 @@ public class PromptlyPanel extends Composite {
 		         event.preventDefault();
 		      }
 		   } else {
-		      if (_collectMouseEvents) {
+		      if (_collectMouseEventsWhenInNonCommandLineMode) {
       			if (_isCommandLineMode) {
       				setFocusToTextArea();
       			} else {
@@ -96,6 +99,7 @@ public class PromptlyPanel extends Composite {
 		   }
 		}
 	};
+
 
 	public PromptlyPanel() {
 		_outerPanel = new FlowPanel() {
@@ -189,7 +193,7 @@ public class PromptlyPanel extends Composite {
 			@Override
 			public void onKeyDown(KeyDownEvent event) {
 				
-			   if (_collectKeyEvents /* Collection of events can be halted */) {
+			   if (_collectKeyEventsWhenInNonCommandLineMode /* Collection of events can be halted */) {
    			   if (event.getNativeKeyCode() == KeyCodes.KEY_C && event.isControlKeyDown()) {
    			      _listener.onControlCPressedInAllModes(PromptlyPanel.this);
    			      event.stopPropagation();
@@ -424,10 +428,10 @@ public class PromptlyPanel extends Composite {
 	/**
 	 * 
 	 * @param commandLineMode Sets whether command line (prompt mode) is enabled or disabled.
-	 * @param collectKeyEvents If not in command line mode, sets whether keyboard events are collected or ignored.
-	 * @param collectMouseEvents If not in command line mode, sets whether mouse events are collected or ignored (DOES NOT APPLY TO VISIBLE HYPERLINKS)
+	 * @param collectKeyEventsWhenInNonCommandLineMode If not in command line mode, sets whether keyboard events are collected or ignored.
+	 * @param collectMouseEventsWhenInNonCommandLineMode If not in command line mode, sets whether mouse events are collected or ignored (DOES NOT APPLY TO VISIBLE HYPERLINKS)
 	 */
-	public final void setCommandLineMode(final boolean commandLineMode, final boolean collectKeyEvents, final boolean collectMouseEvents /* adv = default to true */) {
+	public final void setCommandLineMode(final boolean commandLineMode, final boolean collectKeyEventsWhenInNonCommandLineMode, final boolean collectMouseEventsWhenInNonCommandLineMode /* adv = default to true */) {
 		ScheduledCommand cmd = new ScheduledCommand() {
 			@Override
 			public void execute() {
@@ -436,7 +440,6 @@ public class PromptlyPanel extends Composite {
 			         setCommandLineText("");
 			      }
 			   }
-			   
 			   showCaret(commandLineMode);
 			   if (commandLineMode != isCommandLineMode()) {
    				boolean refocusOnCommandLine = (!_isCommandLineMode) && commandLineMode;
@@ -445,12 +448,9 @@ public class PromptlyPanel extends Composite {
    				   setFocusToTextArea();
    				}
 			   }
-			   
-			   _collectKeyEvents   = collectKeyEvents;
-			   _collectMouseEvents = collectMouseEvents;
+			   _collectKeyEventsWhenInNonCommandLineMode   = collectKeyEventsWhenInNonCommandLineMode;
+			   _collectMouseEventsWhenInNonCommandLineMode = collectMouseEventsWhenInNonCommandLineMode;
 			}
-
-
 		};
 		Scheduler.get().scheduleDeferred(cmd);
 	}
@@ -514,11 +514,11 @@ public class PromptlyPanel extends Composite {
    }
    
    public boolean isCollectKeyEvents() {
-      return _collectKeyEvents;
+      return _collectKeyEventsWhenInNonCommandLineMode;
    }
    
    public boolean isCollectMouseEvents() {
-      return _collectMouseEvents;
+      return _collectMouseEventsWhenInNonCommandLineMode;
    }
    
    public boolean isCommandLineMode() {
@@ -694,6 +694,15 @@ public class PromptlyPanel extends Composite {
    public String getPromptChar() {
       String promptChar = _caret.getElement().getInnerText();
       return promptChar;
+   }
+   
+   public void setBlockingHyperlinks(boolean blockingHyperlinks) {
+      _blockingHyperlinks = blockingHyperlinks;
+   }
+
+
+   public boolean isBlockingHyperlinks() {
+      return _blockingHyperlinks;
    }
    
 }

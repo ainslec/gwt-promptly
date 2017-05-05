@@ -122,7 +122,9 @@ public class StyledBlock {
             ClickHandler handler = new ClickHandler() {
                @Override
                public void onClick(ClickEvent event) {
-                  callback.onClick(promptlyPanel, text, event.getClientX(), event.getClientY());
+                  if (!promptlyPanel.isBlockingHyperlinks()) {
+                     callback.onClick(promptlyPanel, text, event.getClientX(), event.getClientY());
+                  }
                }
             };
             spanElement.addDomHandler(handler , ClickEvent.getType());
