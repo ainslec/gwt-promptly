@@ -26,6 +26,7 @@ import com.google.gwt.dom.client.LIElement;
 import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.OListElement;
 import com.google.gwt.dom.client.ParagraphElement;
+import com.google.gwt.dom.client.PreElement;
 import com.google.gwt.dom.client.UListElement;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -44,15 +45,16 @@ import com.google.gwt.user.client.ui.TextBox;
  */
 public class PromptlyPanel extends Composite {
 
-   public static final String DEFAULT_TEXT_STYLE_NAME        = "gwtpromptly";
+   public static final String DEFAULT_TEXT_STYLE_CLASSNAME   = "gwtpromptly";
    public static final String DEFAULT_BACKGROUND_STYLE_NAME  = "gwtpromptlybackground";
    public static final String DEFAULT_TEXTBOX_STYLE          = "flex-grow:1;font-family:inherit;font-size:inherit;color:inherit; background-color: transparent; border: 0px solid;outline: none;text-shadow:inherit;";
 	public static final String DEFAULT_CARET_STYLE_VISIBLE    = "flex-grow:0;padding-right:4px;";
 	public static final String DEFAULT_CARET_STYLE_INVISIBLE  = "flex-grow:0;padding-right:4px;display:none;";
-
-   private static PanelListener DEFAULT_LISTENER = new DefaultPanelListener();
+	public static final boolean DEFAULT_SUPPORT_TAB_CAPTURE   = true;
+	
+   private static PromptlyListener DEFAULT_LISTENER = new DefaultPromptlyListener();
    
-   private PanelListener             _listener           = DEFAULT_LISTENER;
+   private PromptlyListener             _listener           = DEFAULT_LISTENER;
 	private boolean                   _isCommandLineMode  = true;
 	private boolean                   _collectKeyEvents   = true;
 	private boolean                   _collectMouseEvents = true;
@@ -88,7 +90,7 @@ public class PromptlyPanel extends Composite {
       			} else {
       			   int clientX = event.getClientX();
       			   int clientY = event.getClientY();
-      				_listener.onClickWhenInputBoxNotShowing(PromptlyPanel.this, clientX, clientY);
+      				_listener.onClickInNonCommandMode(PromptlyPanel.this, clientX, clientY);
       			}
 		      }
 		   }
@@ -97,8 +99,7 @@ public class PromptlyPanel extends Composite {
 
 	public PromptlyPanel() {
 		_outerPanel = new FlowPanel() {
-		   
-		   //RepeatingCommand _cmd = null;
+		  //RepeatingCommand _cmd = null;
 		  // boolean _flashEnabled = true;
 		   
 			@Override
@@ -137,9 +138,14 @@ public class PromptlyPanel extends Composite {
 		
 		_mainTextFlowDiv = new FlowPanel();
 		
-      String textStyleName = getTextStyleName();
+      String textStyleName = getTextClassName();
+      
 		if (textStyleName != null) {
 		   _mainTextFlowDiv.setStyleName(textStyleName);
+		}
+		
+		if (getTextAdditionalStyles() != null && getTextAdditionalStyles().length() > 0) {
+		   _mainTextFlowDiv.getElement().setAttribute("style", getTextAdditionalStyles());
 		}
 		
 		initCommandLineTextEntryTextBox();
@@ -151,7 +157,7 @@ public class PromptlyPanel extends Composite {
 	}
 
 
-   protected void initCommandLineTextEntryTextBox() {
+   protected final void initCommandLineTextEntryTextBox() {
 		_commandLineWrapper = new FlowPanel();
 		_commandLineWrapper.getElement().setAttribute("style", "display: flex;");
 
@@ -159,10 +165,9 @@ public class PromptlyPanel extends Composite {
 		
 		String caretStyleVisible = getCaretStyleVisible();
 		
-		if (caretStyleVisible != null) {
-		   _caret.getElement().setAttribute("style", caretStyleVisible);
-		}
+		setCaretStyleVisible(caretStyleVisible);
 		_caret.getElement().setInnerText(">");
+		
 		_commandLineWrapper.add(_caret);
 
 		_commandLineTextBox = new TextBox() {
@@ -175,13 +180,9 @@ public class PromptlyPanel extends Composite {
 			}
 		};
 		
-		String textboxStyle = getTextboxStyle();
+		String textboxStyle = getDefaultCommandLineTextboxStyle();
 		
-		if (textboxStyle != null) {
-		   _commandLineTextBox.getElement().setAttribute("style", textboxStyle);
-		}
-		_commandLineTextBox.getElement().setAttribute("autocomplete","off");
-		_commandLineTextBox.getElement().setClassName(null);
+		setCommandLineTextboxStyle(textboxStyle);
 		
 		final KeyDownHandler keyDownHandler = new KeyDownHandler() {
 			
@@ -190,52 +191,62 @@ public class PromptlyPanel extends Composite {
 				
 			   if (_collectKeyEvents /* Collection of events can be halted */) {
    			   if (event.getNativeKeyCode() == KeyCodes.KEY_C && event.isControlKeyDown()) {
-   			      _listener.onControlCPressedInAnyMode(PromptlyPanel.this);
+   			      _listener.onControlCPressedInAllModes(PromptlyPanel.this);
    			      event.stopPropagation();
    			   } else {
       				if (_isCommandLineMode) {
       				   
                      int nativeKeyCode = event.getNativeKeyCode();
-      					if (nativeKeyCode == 13 /* carriage return */) {
-      						String innerText = _commandLineTextBox.getText();
-      						recordInputInCacheIfAppropriate(innerText);
-      						_listener.onTextEntered(PromptlyPanel.this, innerText);
-      						if (isClearTextboxOnCarriageReturnPressed()) {
-      							_commandLineTextBox.setText("");
-      						}
-      						event.stopPropagation();
-      					} else if (nativeKeyCode == KeyCodes.KEY_TAB) {
-                       String innerText = _commandLineTextBox.getText();
-                        recordInputInCacheIfAppropriate(innerText);
-                        _listener.onTabPressed(PromptlyPanel.this, innerText);
-                        event.stopPropagation();
-      					} else {
-      					   if (_commandCacheLimit != 0) {
-                           if (nativeKeyCode == KeyCodes.KEY_DOWN) {
-      					         String historicalCommandText = accessMoreRecentCommandText();
-      					         if (historicalCommandText != null) {
-      					            _commandLineTextBox.setText(historicalCommandText);
-      					            event.stopPropagation();
-      					            event.preventDefault();
-      					         }
-      					      } else if (nativeKeyCode == KeyCodes.KEY_UP) {
-      					         String historicalCommandText = accessOlderCommandText();
-      					         
-      					         if (historicalCommandText != null) {
-                                 _commandLineTextBox.setText(historicalCommandText);
-                                 event.stopPropagation();
-                                 event.preventDefault();
-                              }
-      					         
-      					      }
-      					   }
-      					}
+                     if (nativeKeyCode == KeyCodes.KEY_TAB) {
+                        boolean isSupportsTabCapture = isSupportTabCapture();
+                        if (isSupportsTabCapture) {
+                          String innerText = _commandLineTextBox.getText();
+                           event.stopPropagation();
+                           event.preventDefault();
+                           _listener.onTabPressedInCommandMode(PromptlyPanel.this, innerText);
+                        } else {
+                           // Let the browser deal with the tab event
+                        }
+                     } else {
+         					if (nativeKeyCode == KeyCodes.KEY_ENTER /* carriage return */) {
+         						String innerText = _commandLineTextBox.getText();
+         						addCacheItem(innerText);
+         						_listener.onTextEnteredInCommandMode(PromptlyPanel.this, innerText);
+         						boolean clearTextboxOnCarriageReturnPressed = isClearTextboxOnCarriageReturnPressed();
+                           if (clearTextboxOnCarriageReturnPressed) {
+         							_commandLineTextBox.setText("");
+         						}
+         						event.stopPropagation();
+         					}  else {
+         					   if (_commandCacheLimit != 0) {
+                              if (nativeKeyCode == KeyCodes.KEY_DOWN) {
+         					         String historicalCommandText = accessMoreRecentCommandText();
+         					         if (historicalCommandText != null) {
+         					            _commandLineTextBox.setText(historicalCommandText);
+         					            event.stopPropagation();
+         					            event.preventDefault();
+         					         }
+         					      } else if (nativeKeyCode == KeyCodes.KEY_UP) {
+         					         String historicalCommandText = accessOlderCommandText();
+         					         
+         					         if (historicalCommandText != null) {
+                                    _commandLineTextBox.setText(historicalCommandText);
+                                    event.stopPropagation();
+                                    event.preventDefault();
+                                 }
+         					         
+         					      }
+         					   }
+         					}
+         					_listener.onNonTabPressedInCommandMode(PromptlyPanel.this);
+                     }
+      					
       				} else {
       					// event can propogate
       					int nativeKeyCode = event.getNativeKeyCode();
       					char keyCode = 0;
       					
-      					// TODO :: Support cursor keys ... 
+      					// TODO :: Support all keys
       					
       					if (nativeKeyCode >= KeyCodes.KEY_A && nativeKeyCode <= KeyCodes.KEY_Z) {
       						keyCode = (char)(((int)'a') + (nativeKeyCode - KeyCodes.KEY_A));
@@ -245,7 +256,7 @@ public class PromptlyPanel extends Composite {
       						keyCode = 1;
       					}
       
-      					_listener.onKeypressWhenInputBoxNotShowing(PromptlyPanel.this, keyCode);
+      					_listener.onKeypressedInNonCommandMode(PromptlyPanel.this, keyCode);
       					event.preventDefault();
       					event.stopPropagation();
       				}
@@ -265,8 +276,34 @@ public class PromptlyPanel extends Composite {
 
 	}
 
+
+   /**
+    * Usage: PromptlyPanel.setCaretStyleVisible(PromptlyPanel.DEFAULT_CARET_STYLE_VISIBLE + "color:red;");
+    * @param caretStyleVisible
+    */
+   public void setCaretStyleVisible(String caretStyleVisible) {
+      if (caretStyleVisible != null) {
+		   _caret.getElement().setAttribute("style", caretStyleVisible);
+		}
+      _caret.getElement().setClassName(null);
+   }
+
+   /**
+    * Usage : setCommandLineTextboxStyle(PromptlyPanel.DEFAULT_TEXTBOX_STYLE + "caret-color:#ccc;color:red;");
+    * @param textboxStyle Sets the textbox style ... to get default, use {@link #getDefaultCommandLineTextboxStyle()}
+    */
+   public void setCommandLineTextboxStyle(String textboxStyle) {
+      _commandLineTextBox.getElement().removeAttribute("style");
+      
+      if (textboxStyle != null) {
+		   _commandLineTextBox.getElement().setAttribute("style", textboxStyle);
+		}
+      _commandLineTextBox.getElement().setAttribute("autocomplete","off");
+      _commandLineTextBox.getElement().setClassName(null);
+   }
+
 	
-	public PromptlyPanel setTextEntryListener(PanelListener listener) {
+	public final PromptlyPanel setTextEntryListener(PromptlyListener listener) {
 		if (listener == null) {
 			_listener = DEFAULT_LISTENER;
 		} else {
@@ -276,24 +313,35 @@ public class PromptlyPanel extends Composite {
 		return this;
 	}
 	
-	public ItemHandle append (String paragraphText) {
-	   
+	public final ItemHandle append (String paragraphText) {
 	   FlowPanel tag = null;
-	   
 	   if (paragraphText.length() == 0) {
 	      tag = new FlowPanel(BRElement.TAG);
 	   } else {
    		tag = new FlowPanel(ParagraphElement.TAG);
    		tag.getElement().setInnerText(paragraphText);
 	   }
-	   
       appendAndScrollOrFocusAsAppropriate(tag);
-      
       return new ItemHandle(this, tag);
 	}
 	
+   public final ItemHandle appendPre (String paragraphText) {
+      FlowPanel tag = null;
+      if (paragraphText.length() == 0) {
+         tag = new FlowPanel(BRElement.TAG);
+      } else {
+         tag = new FlowPanel(PreElement.TAG);
+         if (getPreBlockClassName() != null) {
+            tag.getElement().setAttribute("class", getPreBlockClassName());
+         }
+         tag.getElement().setInnerText(paragraphText);
+      }
+      appendAndScrollOrFocusAsAppropriate(tag);
+      return new ItemHandle(this, tag);
+   }
 	
-	public ItemHandle appendEmbeddedImage(HAlignment imageAlignment, String embeddedImageText, String embeddedImageStyle, String description) {
+	
+	public final ItemHandle appendEmbeddedImage(HAlignment imageAlignment, String embeddedImageText, String embeddedImageStyle, String description) {
 	   FlowPanel outer = new FlowPanel(DivElement.TAG);
 	   
 	   String imageAlignment1 = "text-align:center;";
@@ -318,16 +366,20 @@ public class PromptlyPanel extends Composite {
 	
 	/**
 	 * 
-	 * @param styledParagraph A non null styled paragraph instance
+	 * @param styledBlock A non null styled paragraph instance
 	 * @param withFormatting If false, then styles will be ignored.
 	 */
-   public void append (StyledParagraph styledParagraph, boolean withFormatting) {
-
-      final FlowPanel gwtWidget = styledParagraph.toGwtWidget(withFormatting);
+   public final void append(StyledBlock styledBlock, boolean withFormatting) {
+      final FlowPanel gwtWidget = styledBlock.toGwtWidget(this, withFormatting, false /* is pre block */, null /* outer style override */);
       appendAndScrollOrFocusAsAppropriate(gwtWidget);
    }
 
-   private void appendAndScrollOrFocusAsAppropriate(FlowPanel tag) {
+   public final void appendPre(StyledBlock styledBlock, boolean withFormatting) {
+      final FlowPanel gwtWidget = styledBlock.toGwtWidget(this, withFormatting, true /* is pre block */, getPreBlockClassName());
+      appendAndScrollOrFocusAsAppropriate(gwtWidget);
+   }
+   
+   private final void appendAndScrollOrFocusAsAppropriate(FlowPanel tag) {
       int numWidgets = _mainTextFlowDiv.getWidgetCount();
       if (numWidgets == 0) {
          _mainTextFlowDiv.add(tag);
@@ -341,8 +393,9 @@ public class PromptlyPanel extends Composite {
          tag.getElement().scrollIntoView();
       }
    }
+   
 
-   public void appendList(ArrayList<String> choices, boolean ordered) {
+   public final void appendList(ArrayList<String> choices, boolean ordered) {
       if (choices == null || choices.size() == 0) {
          return;
       }
@@ -358,7 +411,7 @@ public class PromptlyPanel extends Composite {
       appendAndScrollOrFocusAsAppropriate(htmlList);
    }
 	
-	public void clearScreen() {
+	public final void clearScreen() {
 		int numWidgets = _mainTextFlowDiv.getWidgetCount();
 		if (numWidgets > 0) {
 			_mainTextFlowDiv.clear();
@@ -374,10 +427,16 @@ public class PromptlyPanel extends Composite {
 	 * @param collectKeyEvents If not in command line mode, sets whether keyboard events are collected or ignored.
 	 * @param collectMouseEvents If not in command line mode, sets whether mouse events are collected or ignored (DOES NOT APPLY TO VISIBLE HYPERLINKS)
 	 */
-	public void setCommandLineMode(final boolean commandLineMode, final boolean collectKeyEvents, final boolean collectMouseEvents /* adv = default to true */) {
+	public final void setCommandLineMode(final boolean commandLineMode, final boolean collectKeyEvents, final boolean collectMouseEvents /* adv = default to true */) {
 		ScheduledCommand cmd = new ScheduledCommand() {
 			@Override
 			public void execute() {
+			   if (!commandLineMode) {
+			      if (isCleardownCommandLineTextWhenSwitchingToNonCommandMode()) {
+			         setCommandLineText("");
+			      }
+			   }
+			   
 			   showCaret(commandLineMode);
 			   if (commandLineMode != isCommandLineMode()) {
    				boolean refocusOnCommandLine = (!_isCommandLineMode) && commandLineMode;
@@ -390,12 +449,14 @@ public class PromptlyPanel extends Composite {
 			   _collectKeyEvents   = collectKeyEvents;
 			   _collectMouseEvents = collectMouseEvents;
 			}
+
+
 		};
 		Scheduler.get().scheduleDeferred(cmd);
 	}
 	
 	
-	public void showCaret(boolean showCaret) {
+	public final void showCaret(boolean showCaret) {
 	   if (showCaret) {
 	        String caretStyleVisible = getCaretStyleVisible();
 	         if (caretStyleVisible != null) {
@@ -413,22 +474,30 @@ public class PromptlyPanel extends Composite {
 	   }
 	}
 
-	public void setFocusToTextArea() {
+	public final void setFocusToTextArea() {
 		if (isStealFocusOnUpdate()) {
 			_commandLineTextBox.setFocus(true);
 		}
 		_commandLineWrapper.getElement().scrollIntoView();
 	}
 
-   public void setCommandLineText(String string) {
+   public final void setCommandLineText(String string) {
       _commandLineTextBox.setText(string);
    }
    
-   public void setConsoleStyleOverride(String overrideString) {
-      _mainTextFlowDiv.getElement().setAttribute("style", overrideString);
+   public final void setConsoleStyle(String overrideString) {
+      if (overrideString != null) {
+         _mainTextFlowDiv.getElement().setAttribute("style", overrideString);
+      }
    }
    
-   public void setPromptChar(String string) {
+   public final void setConsoleClass(String overrideString) {
+      if (overrideString != null) {
+         _mainTextFlowDiv.getElement().setAttribute("class", overrideString);
+      }
+   }
+   
+   public final void setPromptChar(String string) {
       _caret.getElement().setInnerText(string);
    }
    
@@ -440,7 +509,7 @@ public class PromptlyPanel extends Composite {
       return true;
    }
 
-   private boolean isClearTextboxOnCarriageReturnPressed() {
+   public boolean isClearTextboxOnCarriageReturnPressed() {
       return true;
    }
    
@@ -455,13 +524,30 @@ public class PromptlyPanel extends Composite {
    public boolean isCommandLineMode() {
       return _isCommandLineMode;
    }
+   
+   public boolean isSupportTabCapture() {
+      return DEFAULT_SUPPORT_TAB_CAPTURE;
+   }
+
 
    public String getBackgroundStyleName() {
       return DEFAULT_BACKGROUND_STYLE_NAME;
    }
 
-   public String getTextStyleName() {
-      return DEFAULT_TEXT_STYLE_NAME;
+   public String getTextClassName() {
+      return DEFAULT_TEXT_STYLE_CLASSNAME;
+   }
+   
+   /**
+    * 
+    * @return if null, not used, otherwise, not a bad place to scale the text 'font-size:1.5em;'
+    */
+   public String getTextAdditionalStyles() {
+      return null;
+   }
+   
+   public String getPreBlockClassName() {
+      return DEFAULT_TEXT_STYLE_CLASSNAME;
    }
    
    public String getCaretStyleVisible() {
@@ -472,8 +558,12 @@ public class PromptlyPanel extends Composite {
       return DEFAULT_CARET_STYLE_INVISIBLE;
    }
    
-   public String getTextboxStyle() {
+   public String getDefaultCommandLineTextboxStyle() {
       return DEFAULT_TEXTBOX_STYLE;
+   }
+   
+   public boolean isCleardownCommandLineTextWhenSwitchingToNonCommandMode() {
+      return true;
    }
 
    public boolean isInitiallyFocusOnTextBox() {
@@ -484,7 +574,7 @@ public class PromptlyPanel extends Composite {
       return true;
    }
    
-   private void recordInputInCacheIfAppropriate(String input) {
+   public final void addCacheItem(String input) {
       if (_commandCacheLimit > 0) {
          _stowed                      = "";
          _commandCacheUserCursorIndex = -1; // The cursor is nowhere ... 

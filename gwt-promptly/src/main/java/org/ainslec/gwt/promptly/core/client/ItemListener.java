@@ -24,7 +24,8 @@ public interface ItemListener {
    
    /**
     * Called when a user interacts with an item usually via left clicking or a regular touch event (press) 
+    * @param text 
     */
-   public void onClick(int clientX, int clientY);
+   public void onClick(PromptlyPanel panel, String text, int clientX, int clientY);
    
 }

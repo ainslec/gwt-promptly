@@ -18,6 +18,7 @@ package org.ainslec.gwt.promptly.core.client;
 import java.util.ArrayList;
 
 import com.google.gwt.dom.client.ParagraphElement;
+import com.google.gwt.dom.client.PreElement;
 import com.google.gwt.dom.client.SpanElement;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -31,17 +32,17 @@ import com.google.gwt.user.client.ui.FlowPanel;
  * @author Chris Ainsley
  *
  */
-public class StyledParagraph {
+public class StyledBlock {
    
    int _length = 0;
    
    ArrayList<StyledParagraphItem> _items = new ArrayList<StyledParagraphItem>();
    
-   public StyledParagraph() {
+   public StyledBlock() {
       
    }
    
-   public StyledParagraph append(String text){
+   public StyledBlock append(String text){
       if (text != null) {
          _length+=text.length();
          _items.add(new StyledParagraphItem(null /* style */, text, null /* PromptlyStyledParagraphItem */));
@@ -49,7 +50,7 @@ public class StyledParagraph {
       return this;
    }
    
-   public StyledParagraph append(String text, String style, ItemListener callback) {
+   public StyledBlock append(String text, String style, ItemListener callback) {
       if (text != null) {
          _length += text.length();
          final StyledParagraphItem item = new StyledParagraphItem(style, text, callback);
@@ -96,10 +97,14 @@ public class StyledParagraph {
       return _length;
    }
    
-   FlowPanel toGwtWidget(boolean withFormatting) {
+   FlowPanel toGwtWidget(final PromptlyPanel promptlyPanel, boolean withFormatting, boolean isPreBlock, String outerClassOverride) {
 
-      FlowPanel outerWidget = new FlowPanel(ParagraphElement.TAG /* <p> tag */ );
+      FlowPanel outerWidget = new FlowPanel(isPreBlock ? PreElement.TAG : ParagraphElement.TAG /* <p> tag */ );
 
+      if (outerClassOverride != null) {
+         outerWidget.getElement().setAttribute("class", outerClassOverride);
+      }
+      
       for (StyledParagraphItem paragraphItem : _items) {
          final String text  = paragraphItem.getText();
          final String style = paragraphItem.getStyle();
@@ -117,18 +122,15 @@ public class StyledParagraph {
             ClickHandler handler = new ClickHandler() {
                @Override
                public void onClick(ClickEvent event) {
-                  callback.onClick(event.getClientX(), event.getClientY());
+                  callback.onClick(promptlyPanel, text, event.getClientX(), event.getClientY());
                }
             };
-            
             spanElement.addDomHandler(handler , ClickEvent.getType());
-            spanElement.getElement().setAttribute("onMouseOver", "this.style.fontWeight='bold'");
+            spanElement.getElement().setAttribute("onMouseOver", "this.style.fontWeight='normal'");
             spanElement.getElement().setAttribute("onMouseOut",  "this.style.fontWeight='normal'");
-            
          }
          outerWidget.add(spanElement);
       }
-
       return outerWidget;
    }
 

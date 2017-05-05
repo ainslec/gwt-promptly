@@ -16,17 +16,17 @@
 package org.ainslec.gwt.promptly.core.client;
 
 
+
 /**
- * 
+ * Default listener implementation (does nothing)
  * @author Chris Ainsley
  *
  */
-public interface PanelListener {
-	public void onClickWhenInputBoxNotShowing(PromptlyPanel panel, int clientX, int clientY);
-   // TODO :: Use a proper enumeration in this method so we can check for
-   //         cursor keys, enter key, backspace key, numbers, space bar and regular keys.
-   public void onKeypressWhenInputBoxNotShowing(PromptlyPanel panel, char c);
-	public void onTextEntered(PromptlyPanel panel, String text);
-	public void onTabPressed(PromptlyPanel panel, String text);
-   public void onControlCPressedInAnyMode(PromptlyPanel panel);
+public class DefaultPromptlyListener implements PromptlyListener {
+   @Override public void onTextEnteredInCommandMode(PromptlyPanel panel, String text) {}
+   @Override public void onClickInNonCommandMode(PromptlyPanel panel, int clientX, int clientY) { }
+   @Override public void onKeypressedInNonCommandMode(PromptlyPanel panel, char c) { }
+   @Override public void onControlCPressedInAllModes(PromptlyPanel panel) { }
+   @Override public void onTabPressedInCommandMode(PromptlyPanel panel, String text) { }
+   @Override public void onNonTabPressedInCommandMode(PromptlyPanel panel) { }
 }
