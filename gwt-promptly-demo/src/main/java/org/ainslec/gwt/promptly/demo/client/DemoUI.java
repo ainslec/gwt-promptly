@@ -62,9 +62,9 @@ public class DemoUI extends Composite {
       SUPPORTED_COMMANDS.add(COMMAND_DIR);
    }
    
-   private SplitLayoutPanel   _top;
+   //private SplitLayoutPanel   _top;
    private PromptlyPanel      _leftConsole;
-   private PromptlyPanel      _rightConsole;
+   //private PromptlyPanel      _rightConsole;
    private AutocompleteCycler _cycler;
    
    public static final String EMBEDDED_SOURCE__STAR     = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAG4SURBVGhD7ZjdbcMwDITdrtQOkNcukCGzQF8zQDqTS4CBYegvFHk0Y4DfSwTEtu7Mo2T7Y13X5cx8Pn9PSxqIJg1EkwaiOb2BIzayy88fD+6/XzwA4l6BTT2xH6PIHojG10CdGXiKsgLROBropQWboqxANDEGgCnyMlBIvN++nyM0GaFoXAw0I16kCNUGR1TArwGI00dI+kJjqfhWgcv1wQMFvZeh1waMYS2jb/BA1DZyFZoE3tCiHtClaKBVF6RmG1ibGH5He956TSyNUO98Y1MWzKonpr8LNUsBqYNCPTFtgIDHSSed0axC2DhZ1BPKZRTlwaie0ERoj6Ul7OoJ60bWnEyXJYKuNqWeAOzEs1MytUnddQAGaiQRQu2ALgaO5I0M6J64AAaKiZvZaLY1JEXuFSDprH4bYPE1UCuGe7Aa6AV3cL9Hf823AbgCHGvJbeZj7G2Aj5BEPSM/cgDYQE9Tb5e1ezA9zEkiW0hXnDLGdxWqpegeeAY4GuhpxXpwiZBQ4iBOcpP6ChjVE5BSgCM0q8nuAWaApOjUqE9k9Ab2s1oUMOqrWV/qw3FcRo8hDUSTBmJZln+gQtKxX9KewwAAAABJRU5ErkJggg==";
@@ -74,7 +74,7 @@ public class DemoUI extends Composite {
    public static final String EMBEDDED_SOURCE__CIRCLE   = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAHqSURBVGhD7ZlLTsMwEEDTXoINd+EeSFwOJO7BXVjAKdKBsVzXnp8dJ55EeQvwolLei8dS5V7meZ72TP+Ay8dvWFHMb09h1Yk+AbI0R5eY9oA2aY7mmMaAvvaRhozqgJXUI7UNFQFG9ZfP77Ci+Hp9DisRe4Y1QLaXpTnUGEuGHrCGeoqcoTYoAYL9cvUUIUNukAI4+77qKVyG0MAGbG8fITO4BjqAtN9APWJvuIb/CcPtAfJxpBgRULKxPWJsyAPKTwyxRyyPfghwZY+UApmkaYQ8cw9w+PoReRPYHXBijwgyIaB8/c6JwvQOuHr9CKd0iEO8u/lBUJvYAYfzg5BihxihXXOZ3n/C8h+38xPJvmmfIzSaM2A0Z8BozoDRXLPLFuGKzwOZHsifIzQaIsD5FGX8BQh3v64oDwD8PegZcDhFnFII2MsURaIwO0KuNkGQuQfsaBNSVekQO9kEWeMhoNyE4Q2lQCYp7QAysMHy6DyAPAlDGsiHlnrEDnhoMNoD9AiNbbDbA8f9pR4RLq67ZzTYA0oAIF++d8kQhlO2B/QAQP0BoS1DPVSqPWAKQNQMRI5RpRGLOlIRABgbFmK3B+oCkPUyqtSRlgCkb0aDOtIeEFlS0uwd6RCQofYsl07pH7Ax+tdp10zTDZyAEWHZ7CWYAAAAAElFTkSuQmCC";
 
    public DemoUI() {
-      _top = new SplitLayoutPanel();
+      //_top = new SplitLayoutPanel();
       
       PromptlyListener listener = new DefaultPromptlyListener(){
          
@@ -84,6 +84,7 @@ public class DemoUI extends Composite {
             // This keypress handler is only ever called in non-command line mode. And even then, only when keypress events are not suppressed
             panel.append("Pressed '" + c + "'");
             panel.setCommandLineMode(true /* is command line mode */, true /* is collect events */, true /* is collect mouse events */);
+            panel.setBlockingHyperlinks(false);
          }
          
          @Override
@@ -91,6 +92,7 @@ public class DemoUI extends Composite {
             // This mouse click handler is only ever called in non-command line mode. And even then, only when keypress events are not suppressed
             panel.append("Clicked mouse [" + clientX + ", " + clientY + "]");
             panel.setCommandLineMode(true /* is command line mode */, true /* is collect events */, true /* is collect mouse events */);
+            panel.setBlockingHyperlinks(false);
          }
          
          
@@ -136,20 +138,20 @@ public class DemoUI extends Composite {
       };
       
       // We override the font size here (we can also adjust via css style override)
-      _leftConsole  = new PromptlyPanel(){public String getTextAdditionalStyles() {return "font-size:1.3em;";}}
+      _leftConsole  = new PromptlyPanel(){public String getTextAdditionalStyles() {return "font-size:1.4em;";}}
          .setTextEntryListener(listener).setCommandCacheLimit(HISTORY_CACHE_LIMIT);
          
       // We override the font size here (we can also adjust via css style override)
-      _rightConsole = new PromptlyPanel(){public String getTextAdditionalStyles() {return "font-size:1.3em;";}}
-         .setTextEntryListener(listener).setCommandCacheLimit(HISTORY_CACHE_LIMIT);
+//      _rightConsole = new PromptlyPanel(){public String getTextAdditionalStyles() {return "font-size:1.4em;";}}
+//         .setTextEntryListener(listener).setCommandCacheLimit(HISTORY_CACHE_LIMIT);
       
       _leftConsole.append(CLEARSCREEN_ADVICE);
-      _rightConsole.append(CLEARSCREEN_ADVICE);
+//      _rightConsole.append(CLEARSCREEN_ADVICE);
       
-      _top.addWest(_leftConsole, 700);
-      _top.add(_rightConsole);
+//      _top.addWest(_leftConsole, 700);
+//      _top.add(_rightConsole);
       
-      initWidget(_top);
+      initWidget(_leftConsole);
    }
 
 
@@ -158,6 +160,7 @@ public class DemoUI extends Composite {
    }
 
    private void executeCommandPause(final PromptlyPanel panel) {
+      panel.setBlockingHyperlinks(true);
       panel.append("Pausing for 3 seconds (all input ignored) ....");
       panel.setCommandLineMode(false /* is command line mode */, false /* is collect key events */, false /* is collect mouse events */);
 
@@ -166,6 +169,7 @@ public class DemoUI extends Composite {
          @Override
          public void run() {
             panel.append("... and we are back !");
+            panel.setBlockingHyperlinks(false);
             panel.setCommandLineMode(true /* is command line mode */, true /* is collect key events */, true /* is collect mouse events */);
          }
       };
@@ -175,6 +179,7 @@ public class DemoUI extends Composite {
    private void executeCommandWaitForKey(final PromptlyPanel panel) {
       panel.append("Please press a key (prompt is disabled) ....");
       panel.setCommandLineMode(false /* is command line mode */, true /* is collect key events */, true /* is collect mouse events */);
+      panel.setBlockingHyperlinks(true);
    }
 
    private void executeCommandDir(final PromptlyPanel panel) {
@@ -192,8 +197,8 @@ public class DemoUI extends Composite {
       };
       sp.append("Commands available are ");
       sp.append(COMMAND_CIRCLE, "color:#3e3;cursor:pointer;", listener).append(", ");
-      sp.append(COMMAND_CLEAR, "background-color:blue;color:white;cursor:pointer;", listener).append(", ");
-      sp.append(COMMAND_DIR, "background-color:red;color:blue;cursor:pointer;", listener).append(", ");
+      sp.append(COMMAND_CLEAR, "background-color:#333;color:white;cursor:pointer;", listener).append(", ");
+      sp.append(COMMAND_DIR, "background-color:#444;color:blue;cursor:pointer;", listener).append(", ");
       sp.append(COMMAND_PAUSE, "color:cyan;cursor:pointer;", listener).append(", ");
       sp.append(COMMAND_SQUARE, "color:red;cursor: pointer;", listener).append(", ");
       sp.append(COMMAND_SHIP, "color:orange;cursor: pointer;", listener).append(", ");

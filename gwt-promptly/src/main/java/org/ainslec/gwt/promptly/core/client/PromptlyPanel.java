@@ -399,12 +399,16 @@ public class PromptlyPanel extends Composite {
    }
    
 
-   public final void appendList(ArrayList<String> choices, boolean ordered) {
+   public final void appendList(ArrayList<String> choices, boolean ordered, String additionalStyle) {
       if (choices == null || choices.size() == 0) {
          return;
       }
       
       FlowPanel htmlList = new FlowPanel(ordered? OListElement.TAG : UListElement.TAG);
+      
+      if (additionalStyle != null && additionalStyle.length() > 0) {
+         _caret.getElement().setAttribute("style", additionalStyle);
+      }
       
       for (String choice : choices) {
          FlowPanel item = new FlowPanel(LIElement.TAG);
