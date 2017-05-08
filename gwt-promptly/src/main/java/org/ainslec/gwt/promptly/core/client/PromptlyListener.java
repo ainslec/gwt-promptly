@@ -65,4 +65,7 @@ public interface PromptlyListener {
 	 * @param panel A non-null panel
 	 */
    public void onControlCPressedInAllModes(PromptlyPanel panel);
+   
+   
+   public void onMouseOrTouchDoubleClick(PromptlyPanel panel);
 }

@@ -495,6 +495,11 @@ public class PromptlyPanel extends Composite {
       }
    }
    
+   public final void setOutPanelStyle(String overrideString) {
+      if (overrideString != null) {
+         _outerPanel.getElement().setAttribute("style", overrideString);
+      }
+   }   
    public final void setConsoleClass(String overrideString) {
       if (overrideString != null) {
          _mainTextFlowDiv.getElement().setAttribute("class", overrideString);

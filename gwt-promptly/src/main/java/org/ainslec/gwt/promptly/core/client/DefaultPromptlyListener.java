@@ -29,4 +29,5 @@ public class DefaultPromptlyListener implements PromptlyListener {
    @Override public void onControlCPressedInAllModes(PromptlyPanel panel) { }
    @Override public void onTabPressedInCommandMode(PromptlyPanel panel, String text) { }
    @Override public void onNonTabPressedInCommandMode(PromptlyPanel panel) { }
+   @Override public void onMouseOrTouchDoubleClick(PromptlyPanel panel) { }
 }
