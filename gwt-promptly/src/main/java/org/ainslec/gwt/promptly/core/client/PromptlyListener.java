@@ -61,11 +61,18 @@ public interface PromptlyListener {
 	public void onNonTabPressedInCommandMode(PromptlyPanel panel/* , char c */);
 	
 	/**
-	 * If the user presses ctrl+c in any mode, the event is registered here. No other events are fired for ctrl+c.
+	 * If the user presses ctrl+c in any mode, the event is registered here. No other events are fired for ctrl+c. 
 	 * @param panel A non-null panel
 	 */
    public void onControlCPressedInAllModes(PromptlyPanel panel);
    
    
-   public void onMouseOrTouchDoubleClick(PromptlyPanel panel);
+   /**
+    * Fired when a double click event is fired. These events are only collected and fired if {@link PromptlyPanel#isCaptureDoubleClick()} is
+    * overridden to return a 'true' value.
+    * @param panel A non-null panel
+    * @param clientX The client x position of the initial click / touch (the second click may be a few pixels away)
+    * @param clientY The client y position of the initial click / touch (the second click may be a few pixels away)
+    */
+   public void onMouseOrTouchDoubleClick(PromptlyPanel panel, int clientX, int clientY);
 }

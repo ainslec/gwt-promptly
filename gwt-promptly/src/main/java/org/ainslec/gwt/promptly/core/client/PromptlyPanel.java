@@ -141,7 +141,11 @@ public class PromptlyPanel extends Composite {
                            if (_pendingClick != null) {
                               _pendingClick.cancel();
                               _pendingClick = null;
-                              _listener.onMouseOrTouchDoubleClick(PromptlyPanel.this);
+                              _listener.onMouseOrTouchDoubleClick(PromptlyPanel.this, _clientX, _clientY);
+                              
+                              if (isRestoreFocusToCommandLineOnDoubleClickEvent()) {
+                                 focusOnCommandLine();
+                              }
                            } else {
                               // We use a timer delay to detect if a click is a single click or double click.
                               _pendingClick = new Timer() {
@@ -174,7 +178,7 @@ public class PromptlyPanel extends Composite {
          private void handleClickEvent(final int x3, final int y3) {
             _pendingClick = null;
             if (_isCommandLineMode) {
-               setFocusToTextArea();
+               focusOnCommandLine();
             } else {
                _listener.onClickInNonCommandMode(PromptlyPanel.this, x3, y3);
             }
@@ -227,7 +231,7 @@ public class PromptlyPanel extends Composite {
 			protected void onAttach() {
 				super.onAttach();
 				if (isInitiallyFocusOnTextBox()) {
-					setFocusToTextArea();
+					focusOnCommandLine();
 				}
 			}
 		};
@@ -440,7 +444,7 @@ public class PromptlyPanel extends Composite {
       }
 	   
       if (_isCommandLineMode) {
-         setFocusToTextArea();
+         focusOnCommandLine();
       } else {
          tag.getElement().scrollIntoView();
       }
@@ -472,7 +476,7 @@ public class PromptlyPanel extends Composite {
 		if (numWidgets > 0) {
 			_mainTextFlowDiv.clear();
 			_mainTextFlowDiv.add(_commandLineWrapper);
-			setFocusToTextArea();
+			focusOnCommandLine();
 		}
 	}
 	
@@ -497,7 +501,7 @@ public class PromptlyPanel extends Composite {
    				boolean refocusOnCommandLine = (!_isCommandLineMode) && commandLineMode;
    				_isCommandLineMode = commandLineMode;
    				if (refocusOnCommandLine) {
-   				   setFocusToTextArea();
+   				   focusOnCommandLine();
    				}
 			   }
 			   _collectKeyEventsWhenInNonCommandLineMode   = collectKeyEventsWhenInNonCommandLineMode;
@@ -526,7 +530,7 @@ public class PromptlyPanel extends Composite {
 	   }
 	}
 
-	public final void setFocusToTextArea() {
+	public final void focusOnCommandLine() {
 		if (isStealFocusOnUpdate()) {
 			_commandLineTextBox.setFocus(true);
 		}
@@ -560,7 +564,7 @@ public class PromptlyPanel extends Composite {
    
    /**
     * Override this to be able to change contents of console without refocusing on the textbox every time
-    * @return Return a false value here to be able to change contents of console without refocusing on the textbox every time. If this returns a false value then a call to {@link #setFocusToTextArea()} does nothing. 
+    * @return Return a false value here to be able to change contents of console without refocusing on the textbox every time. If this returns a false value then a call to {@link #focusOnCommandLine()} does nothing. 
     */
    public boolean isStealFocusOnUpdate() {
       return true;
@@ -758,5 +762,9 @@ public class PromptlyPanel extends Composite {
     */
    public int getDoubleClickDetectionThresholdMillis() {
       return DOUBLE_CLICK_THRESHOLD_MILLIS;
+   }
+   
+   public boolean isRestoreFocusToCommandLineOnDoubleClickEvent() {
+      return true;
    }
 }
