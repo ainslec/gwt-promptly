@@ -33,6 +33,9 @@ import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
+import com.google.gwt.user.client.Element;
+import com.google.gwt.user.client.Event;
+import com.google.gwt.user.client.EventListener;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.TextBox;
@@ -50,6 +53,7 @@ import com.google.gwt.user.client.ui.TextBox;
  */
 public class PromptlyPanel extends Composite {
 
+   private static final int ACCEPTABLE_CLICK_EVENT_JUDDER_PIXELS = 6;
    public static final String DEFAULT_TEXT_STYLE_CLASSNAME   = "gwtpromptly";
    public static final String DEFAULT_BACKGROUND_STYLE_NAME  = "gwtpromptlybackground";
    public static final String DEFAULT_TEXTBOX_STYLE          = "flex-grow:1;font-family:inherit;font-size:inherit;color:inherit; background-color: transparent; border: 0px solid;outline: none;text-shadow:inherit;";
@@ -84,28 +88,31 @@ public class PromptlyPanel extends Composite {
    private String[] _commandCache = new String[]{};
    
    
-	ClickHandler _clickHandler = new ClickHandler() {
-		@Override public void onClick(ClickEvent event) {
-		   if (event.getNativeButton() != NativeEvent.BUTTON_LEFT) {
-		      if (isStopRightClickPropogation()) {
-		         event.stopPropagation();
-		         event.preventDefault();
-		      }
-		   } else {
-		      if (_collectMouseEventsWhenInNonCommandLineMode) {
-      			if (_isCommandLineMode) {
-      				setFocusToTextArea();
-      			} else {
-      			   int clientX = event.getClientX();
-      			   int clientY = event.getClientY();
-      				_listener.onClickInNonCommandMode(PromptlyPanel.this, clientX, clientY);
-      			}
-		      }
-		   }
-		}
-	};
+//	ClickHandler _clickHandler = new ClickHandler() {
+//		@Override public void onClick(ClickEvent event) {
+//		   if (event.getNativeButton() != NativeEvent.BUTTON_LEFT) {
+//		      if (isStopRightClickPropogation()) {
+//		         event.stopPropagation();
+//		         event.preventDefault();
+//		      }
+//		   } else {
+//		      if (_collectMouseEventsWhenInNonCommandLineMode) {
+//      			if (_isCommandLineMode) {
+//      				setFocusToTextArea();
+//      			} else {
+//      			   int clientX = event.getClientX();
+//      			   int clientY = event.getClientY();
+//      				_listener.onClickInNonCommandMode(PromptlyPanel.this, clientX, clientY);
+//      			}
+//		      }
+//		   }
+//		}
+//	};
 
-
+   
+   
+   private static final int DOUBLE_CLICK_THRESHOLD_MILLIS = 450;
+   
 	public PromptlyPanel() {
 		_outerPanel = new FlowPanel() {
 		  //RepeatingCommand _cmd = null;
@@ -114,9 +121,12 @@ public class PromptlyPanel extends Composite {
 			@Override
 	      public void onAttach() {
               super.onAttach();
+              
+              sinkEvents(Event.MOUSEEVENTS);
+              
               // TODO :: Use mousedown, mouseup, and mousemove events to filter out drag events 
               //         (for selecting text for copy paste purposes)
-	 		     super.addDomHandler(_clickHandler, ClickEvent.getType());
+	 		     //super.addDomHandler(_clickHandler, ClickEvent.getType());
 //	 		     final Scheduler scheduler = Scheduler.get();
 //	 		     _cmd = new RepeatingCommand() {
 //               @Override
@@ -136,6 +146,80 @@ public class PromptlyPanel extends Composite {
 //			      _cmd          = null;
 //			   }
 			}
+			
+			int _clientX = -1;
+			int _clientY = -1;
+			
+         @Override
+         public void onBrowserEvent(Event event) {
+            
+            int typeInt = event.getTypeInt();
+            
+            System.out.println(event);
+            
+            System.out.println(typeInt);
+
+            if ((typeInt & Event.ONMOUSEDOWN) != 0) {
+               
+               int buttonId = event.getButton();
+               
+               if ((NativeEvent.BUTTON_LEFT & buttonId) != 0) {
+                  System.out.println("Mouse down");
+                  _clientX = event.getClientX();
+                  _clientY = event.getClientY();
+               } else {
+                  event.preventDefault();
+               }
+               
+               //event.preventDefault();
+//            } else if ((typeInt & Event.ONDBLCLICK) != 0) {
+//               System.out.println("Double Click");
+//            } else if  ((typeInt & Event.ONCONTEXTMENU) != 0) {
+//               System.out.println("Context Menu");
+////            } else if  ((typeInt & Event.ONCLICK) != 0) {
+////               System.out.println("Click");
+//
+            } else if  ((typeInt & Event.ONMOUSEUP) != 0) {
+               
+               int buttonId = event.getButton();
+               
+               if ((NativeEvent.BUTTON_LEFT & buttonId) != 0) {
+                     System.out.println("Mouse up");
+                     // Setting focust to text area steals selection from
+                     // a drag event, so we process click events on mouse up
+                     // and if the mouse has moved more than ACCEPTABLE_CLICK_EVENT_JUDDER_PIXELS pixels 
+                     // in x or y direction between the mouse down and the mouse up event, then
+                     // Do not process as a click event, and let the browser deal with the drag
+                     // event naturally (text selection)
+                     if (!isDragging(event.getClientX(), event.getClientY())) {
+                        if (_isCommandLineMode) {
+                           setFocusToTextArea();
+                        } else {
+                           int clientX = event.getClientX();
+                           int clientY = event.getClientY();
+                           _listener.onClickInNonCommandMode(PromptlyPanel.this, clientX, clientY);
+                        }
+                     }
+               }
+               _clientX = -1; // Always reset these whether right click or not
+               _clientY = -1; // Always reset these whether right click or not
+            } else if ((typeInt & Event.ONMOUSEMOVE) != 0) {
+               System.out.println("Mouse move");
+            }/* else if  ((typeInt & Event.ONMOUSEOVER) != 0) {
+               System.out.println("Mouse over");
+            } else if  ((typeInt & Event.ONMOUSEOUT) != 0) {
+               System.out.println("Mouse out");
+            }*/
+         }
+
+         private boolean isDragging(int clientX, int clientY) {
+            // Judder protection
+            if (_clientX == -1 || (Math.abs(clientX - _clientX) <= ACCEPTABLE_CLICK_EVENT_JUDDER_PIXELS && Math.abs(clientY - _clientY) <= 6)) {
+               return false;
+            }
+            
+            return true;
+         }
 			
 		};
 		
