@@ -39,7 +39,12 @@ import com.google.gwt.user.client.ui.TextBox;
 
 
 /**
- * 
+ * A console-like abstraction atop of HTML. Allows styled text to be added to a console window,
+ * captured prescribed mouse and touch events. Provides a command line at the bottom of the panel. Optionally
+ * records history for the command line. Can enter into 'direct input' mode where the textbox at the bottom is not available.
+ * </br></br>NOTE: Uses flexboxes, and requires the 'gwtpromptly' and gwtpromptlbackground' styles to be included in the core
+ * webpage. This usually happens transparently via the library entry point injecting the stylesheet into the 'head' block
+ * of the webpage.
  * @author Chris Ainsley
  *
  */
@@ -538,7 +543,6 @@ public class PromptlyPanel extends Composite {
       return DEFAULT_SUPPORT_TAB_CAPTURE;
    }
 
-
    public String getBackgroundStyleName() {
       return DEFAULT_BACKGROUND_STYLE_NAME;
    }
@@ -598,34 +602,25 @@ public class PromptlyPanel extends Composite {
    
    private String accessOlderCommandText() {
       String retVal = null;
-      
-      // All good now I think !!!
-      
       if (_commandCacheLimit > 0 && _commandCacheUserCursorLimit != -1) {
          boolean isFirst = _commandCacheUserCursorIndex == -1;
-         
          if (isFirst) {
             _stowed = _commandLineTextBox.getText();
          }
          int interestingIndex = isFirst ? _commandCacheUserCursorLimit : _commandCacheUserCursorIndex - 1 ;
-         
          if (interestingIndex < 0) {
             if (_cacheOverflowed) {
                interestingIndex = _commandCacheLimit - 1;   
             } else {
                interestingIndex = _commandCacheUserCursorIndex;
             }
-  
          }
-         
          if (interestingIndex == _commandCacheUserCursorLimit) {
             interestingIndex = isFirst ? _commandCacheUserCursorLimit : _commandCacheUserCursorIndex;
          }
-         
          retVal = _commandCache[interestingIndex];
          _commandCacheUserCursorIndex = interestingIndex;
       }
-      
       return retVal;
    }
 
@@ -652,11 +647,8 @@ public class PromptlyPanel extends Composite {
          } else {
             retVal = _commandCache[interestingIndex];
             _commandCacheUserCursorIndex = interestingIndex;
-            
          }
-         
       }
-      
       return retVal;
    }
    
@@ -709,9 +701,12 @@ public class PromptlyPanel extends Composite {
       _blockingHyperlinks = blockingHyperlinks;
    }
 
-
    public boolean isBlockingHyperlinks() {
       return _blockingHyperlinks;
+   }
+   
+   public boolean isCaptureDoubleClick() {
+      return true;
    }
    
 }
