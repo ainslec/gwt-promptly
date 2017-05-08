@@ -28,14 +28,11 @@ import com.google.gwt.dom.client.OListElement;
 import com.google.gwt.dom.client.ParagraphElement;
 import com.google.gwt.dom.client.PreElement;
 import com.google.gwt.dom.client.UListElement;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
-import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Event;
-import com.google.gwt.user.client.EventListener;
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.TextBox;
@@ -54,6 +51,7 @@ import com.google.gwt.user.client.ui.TextBox;
 public class PromptlyPanel extends Composite {
 
    private static final int ACCEPTABLE_CLICK_EVENT_JUDDER_PIXELS = 6;
+   private static final int DOUBLE_CLICK_THRESHOLD_MILLIS        = 450; // Faster than Microsoft recommanded delay of 500 milliseconds
    public static final String DEFAULT_TEXT_STYLE_CLASSNAME   = "gwtpromptly";
    public static final String DEFAULT_BACKGROUND_STYLE_NAME  = "gwtpromptlybackground";
    public static final String DEFAULT_TEXTBOX_STYLE          = "flex-grow:1;font-family:inherit;font-size:inherit;color:inherit; background-color: transparent; border: 0px solid;outline: none;text-shadow:inherit;";
@@ -79,39 +77,11 @@ public class PromptlyPanel extends Composite {
    private boolean _cacheOverflowed             = false;
    private boolean _blockingHyperlinks;
    
-
-
    private int _commandCacheUserCursorIndex     = -1; // The is the next index to be displayed to the user
    private int _commandCacheUserCursorLimit     = -1; // This is the limit of the cursor, so we don't loop around indefinately
    
    private String _stowed = "";
    private String[] _commandCache = new String[]{};
-   
-   
-//	ClickHandler _clickHandler = new ClickHandler() {
-//		@Override public void onClick(ClickEvent event) {
-//		   if (event.getNativeButton() != NativeEvent.BUTTON_LEFT) {
-//		      if (isStopRightClickPropogation()) {
-//		         event.stopPropagation();
-//		         event.preventDefault();
-//		      }
-//		   } else {
-//		      if (_collectMouseEventsWhenInNonCommandLineMode) {
-//      			if (_isCommandLineMode) {
-//      				setFocusToTextArea();
-//      			} else {
-//      			   int clientX = event.getClientX();
-//      			   int clientY = event.getClientY();
-//      				_listener.onClickInNonCommandMode(PromptlyPanel.this, clientX, clientY);
-//      			}
-//		      }
-//		   }
-//		}
-//	};
-
-   
-   
-   private static final int DOUBLE_CLICK_THRESHOLD_MILLIS = 450;
    
 	public PromptlyPanel() {
 		_outerPanel = new FlowPanel() {
@@ -121,21 +91,7 @@ public class PromptlyPanel extends Composite {
 			@Override
 	      public void onAttach() {
               super.onAttach();
-              
               sinkEvents(Event.MOUSEEVENTS);
-              
-              // TODO :: Use mousedown, mouseup, and mousemove events to filter out drag events 
-              //         (for selecting text for copy paste purposes)
-	 		     //super.addDomHandler(_clickHandler, ClickEvent.getType());
-//	 		     final Scheduler scheduler = Scheduler.get();
-//	 		     _cmd = new RepeatingCommand() {
-//               @Override
-//               public boolean execute() {
-//                  // TODO Toggle flash attributes ..... 
-//                  return _flashEnabled;
-//               }
-//            };
-            //scheduler.scheduleFixedPeriod(_cmd, 640 /* milliseconds */);
 	      }
 			
 			@Override
@@ -150,66 +106,61 @@ public class PromptlyPanel extends Composite {
 			int _clientX = -1;
 			int _clientY = -1;
 			
+			Timer _pendingClick = null;
+			
          @Override
-         public void onBrowserEvent(Event event) {
+         public void onBrowserEvent(final Event event) {
             
             int typeInt = event.getTypeInt();
-            
-            System.out.println(event);
-            
-            System.out.println(typeInt);
 
             if ((typeInt & Event.ONMOUSEDOWN) != 0) {
-               
                int buttonId = event.getButton();
-               
                if ((NativeEvent.BUTTON_LEFT & buttonId) != 0) {
-                  System.out.println("Mouse down");
                   _clientX = event.getClientX();
                   _clientY = event.getClientY();
                } else {
                   event.preventDefault();
                }
-               
-               //event.preventDefault();
-//            } else if ((typeInt & Event.ONDBLCLICK) != 0) {
-//               System.out.println("Double Click");
-//            } else if  ((typeInt & Event.ONCONTEXTMENU) != 0) {
-//               System.out.println("Context Menu");
-////            } else if  ((typeInt & Event.ONCLICK) != 0) {
-////               System.out.println("Click");
-//
             } else if  ((typeInt & Event.ONMOUSEUP) != 0) {
                
                int buttonId = event.getButton();
                
                if ((NativeEvent.BUTTON_LEFT & buttonId) != 0) {
-                     System.out.println("Mouse up");
+                     final int x3 = event.getClientX();
+                     final int y3 = event.getClientY();
+
                      // Setting focust to text area steals selection from
                      // a drag event, so we process click events on mouse up
                      // and if the mouse has moved more than ACCEPTABLE_CLICK_EVENT_JUDDER_PIXELS pixels 
                      // in x or y direction between the mouse down and the mouse up event, then
                      // Do not process as a click event, and let the browser deal with the drag
                      // event naturally (text selection)
-                     if (!isDragging(event.getClientX(), event.getClientY())) {
-                        if (_isCommandLineMode) {
-                           setFocusToTextArea();
+                     
+                     if (!isDragging(x3, y3)) {
+                        if (isCaptureDoubleClick() /* Double click handling introduces some latency into the click events, so let's make it optional */) {
+                           if (_pendingClick != null) {
+                              _pendingClick.cancel();
+                              _pendingClick = null;
+                              _listener.onMouseOrTouchDoubleClick(PromptlyPanel.this);
+                           } else {
+                              // We use a timer delay to detect if a click is a single click or double click.
+                              _pendingClick = new Timer() {
+                                 @Override
+                                 public void run() {
+                                    handleClickEvent(x3, y3);
+                                 }
+                              };
+                              int doubleClickDetectionThresholdMillis = getDoubleClickDetectionThresholdMillis() < 100 ? 100 : getDoubleClickDetectionThresholdMillis() > 1200 ? 1200 : getDoubleClickDetectionThresholdMillis();
+                              _pendingClick.schedule(doubleClickDetectionThresholdMillis);
+                           }
                         } else {
-                           int clientX = event.getClientX();
-                           int clientY = event.getClientY();
-                           _listener.onClickInNonCommandMode(PromptlyPanel.this, clientX, clientY);
+                           handleClickEvent(x3, y3);
                         }
                      }
                }
                _clientX = -1; // Always reset these whether right click or not
                _clientY = -1; // Always reset these whether right click or not
-            } else if ((typeInt & Event.ONMOUSEMOVE) != 0) {
-               System.out.println("Mouse move");
-            }/* else if  ((typeInt & Event.ONMOUSEOVER) != 0) {
-               System.out.println("Mouse over");
-            } else if  ((typeInt & Event.ONMOUSEOUT) != 0) {
-               System.out.println("Mouse out");
-            }*/
+            }
          }
 
          private boolean isDragging(int clientX, int clientY) {
@@ -217,8 +168,16 @@ public class PromptlyPanel extends Composite {
             if (_clientX == -1 || (Math.abs(clientX - _clientX) <= ACCEPTABLE_CLICK_EVENT_JUDDER_PIXELS && Math.abs(clientY - _clientY) <= 6)) {
                return false;
             }
-            
             return true;
+         }
+
+         private void handleClickEvent(final int x3, final int y3) {
+            _pendingClick = null;
+            if (_isCommandLineMode) {
+               setFocusToTextArea();
+            } else {
+               _listener.onClickInNonCommandMode(PromptlyPanel.this, x3, y3);
+            }
          }
 			
 		};
@@ -285,7 +244,7 @@ public class PromptlyPanel extends Composite {
 			   if (_collectKeyEventsWhenInNonCommandLineMode /* Collection of events can be halted */) {
    			   if (event.getNativeKeyCode() == KeyCodes.KEY_C && event.isControlKeyDown()) {
    			      _listener.onControlCPressedInAllModes(PromptlyPanel.this);
-   			      event.stopPropagation();
+   			      //event.stopPropagation();
    			   } else {
       				if (_isCommandLineMode) {
       				   
@@ -790,7 +749,14 @@ public class PromptlyPanel extends Composite {
    }
    
    public boolean isCaptureDoubleClick() {
-      return true;
+      return false;
    }
    
+   /**
+    * 
+    * @return Any value below 100 here will be limited to 100, any value over 1200 will be limited to 1200
+    */
+   public int getDoubleClickDetectionThresholdMillis() {
+      return DOUBLE_CLICK_THRESHOLD_MILLIS;
+   }
 }
