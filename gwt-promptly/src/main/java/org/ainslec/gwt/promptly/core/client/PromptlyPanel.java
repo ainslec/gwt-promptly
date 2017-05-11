@@ -35,6 +35,7 @@ import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.Panel;
 import com.google.gwt.user.client.ui.TextBox;
 
 
@@ -236,6 +237,13 @@ public class PromptlyPanel extends Composite {
 			}
 		};
 		
+		// Configurable ? 
+		
+      _commandLineTextBox.getElement().setAttribute("autocomplete","off");
+      _commandLineTextBox.getElement().setAttribute("autocorrect","off");
+      _commandLineTextBox.getElement().setAttribute("autocapitalize","off");
+      _commandLineTextBox.getElement().setAttribute("spellcheck","false");
+		
 		String textboxStyle = getDefaultCommandLineTextboxStyle();
 		
 		setCommandLineTextboxStyle(textboxStyle);
@@ -249,6 +257,8 @@ public class PromptlyPanel extends Composite {
    			   if (event.getNativeKeyCode() == KeyCodes.KEY_C && event.isControlKeyDown()) {
    			      _listener.onControlCPressedInAllModes(PromptlyPanel.this);
    			      //event.stopPropagation();
+   			   } else if ( isAlwaysPropogateZoom(event) ) {
+   			      // Optionally ignore zoom events (but propogate), this is configurable
    			   } else {
       				if (_isCommandLineMode) {
       				   
@@ -318,8 +328,12 @@ public class PromptlyPanel extends Composite {
       				}
 			      }
 			   } else {
-               event.preventDefault();
-               event.stopPropagation();
+			      if ( isAlwaysPropogateZoom(event) ) {
+			         
+			      } else {
+                  event.preventDefault();
+                  event.stopPropagation();
+			      }
 			   }
 			}
 
@@ -354,7 +368,7 @@ public class PromptlyPanel extends Composite {
       if (textboxStyle != null) {
 		   _commandLineTextBox.getElement().setAttribute("style", textboxStyle);
 		}
-      _commandLineTextBox.getElement().setAttribute("autocomplete","off");
+      
       _commandLineTextBox.getElement().setClassName(null);
    }
 
@@ -547,7 +561,7 @@ public class PromptlyPanel extends Composite {
       }
    }
    
-   public final void setOutPanelStyle(String overrideString) {
+   public final void setOuterPanelStyle(String overrideString) {
       if (overrideString != null) {
          _outerPanel.getElement().setAttribute("style", overrideString);
       }
@@ -560,6 +574,10 @@ public class PromptlyPanel extends Composite {
    
    public final void setPromptChar(String string) {
       _caret.getElement().setInnerText(string);
+   }
+   
+   public final Panel getOuterPanel() {
+      return _outerPanel;
    }
    
    /**
@@ -767,4 +785,14 @@ public class PromptlyPanel extends Composite {
    public boolean isRestoreFocusToCommandLineOnDoubleClickEvent() {
       return true;
    }
+   
+   public boolean isNeverHandleAndAlwaysPropagateZoomHotkeys() {
+      return false;
+   }
+
+
+   private boolean isAlwaysPropogateZoom(KeyDownEvent event) {
+      return isNeverHandleAndAlwaysPropagateZoomHotkeys() && event.isControlKeyDown() && (event.getNativeKeyCode() == KeyCodes.KEY_NUM_PLUS || event.getNativeKeyCode() == KeyCodes.KEY_NUM_MINUS || event.getNativeKeyCode() == KeyCodes.KEY_NUM_ZERO);
+   }
+   
 }
