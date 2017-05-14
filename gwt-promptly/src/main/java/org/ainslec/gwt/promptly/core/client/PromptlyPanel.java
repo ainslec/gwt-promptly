@@ -254,11 +254,18 @@ public class PromptlyPanel extends Composite {
 			public void onKeyDown(KeyDownEvent event) {
 				
 			   if (_collectKeyEventsWhenInNonCommandLineMode /* Collection of events can be halted */) {
-   			   if (event.getNativeKeyCode() == KeyCodes.KEY_C && event.isControlKeyDown()) {
+			      if ( isAlwaysPropogateZoom(event) ) {
+			      // Optionally ignore zoom events (but propogate), this is configurable
+			      } else if ((isCaptureCtrlNumerics() && event.isControlKeyDown()) && (event.getNativeKeyCode() >= KeyCodes.KEY_ZERO && event.getNativeKeyCode() <= KeyCodes.KEY_NINE)) {
+			         // NOTE :: If always propogating zoon, then ctrl+0 is not handled in this block
+			         _listener.onControlNumberPressedInAllModes(PromptlyPanel.this, event.getNativeKeyCode() - KeyCodes.KEY_ZERO);
+                  event.preventDefault();
+                  event.stopPropagation();
+			      } else if (event.getNativeKeyCode() == KeyCodes.KEY_C && event.isControlKeyDown()) {
    			      _listener.onControlCPressedInAllModes(PromptlyPanel.this);
+   			      // We do not stop propogation (by default) as ctrl+c is handy for copy paste
+   			      // May make this configurable later.
    			      //event.stopPropagation();
-   			   } else if ( isAlwaysPropogateZoom(event) ) {
-   			      // Optionally ignore zoom events (but propogate), this is configurable
    			   } else {
       				if (_isCommandLineMode) {
       				   
@@ -306,7 +313,6 @@ public class PromptlyPanel extends Composite {
          					}
          					_listener.onNonTabPressedInCommandMode(PromptlyPanel.this);
                      }
-      					
       				} else {
       					// event can propogate
       					int nativeKeyCode = event.getNativeKeyCode();
@@ -329,7 +335,12 @@ public class PromptlyPanel extends Composite {
 			      }
 			   } else {
 			      if ( isAlwaysPropogateZoom(event) ) {
-			         
+			         // Do not stop propogation
+               } else if ((isCaptureCtrlNumerics() && event.isControlKeyDown()) && (event.getNativeKeyCode() >= KeyCodes.KEY_ZERO && event.getNativeKeyCode() <= KeyCodes.KEY_NINE)) {
+                  // NOTE :: If always propogating zoon, then ctrl+0 is not handled in this block
+                  _listener.onControlNumberPressedInAllModes(PromptlyPanel.this, event.getNativeKeyCode() - KeyCodes.KEY_ZERO);
+                  event.preventDefault();
+                  event.stopPropagation();
 			      } else {
                   event.preventDefault();
                   event.stopPropagation();
@@ -790,9 +801,15 @@ public class PromptlyPanel extends Composite {
       return false;
    }
 
+   
+   public boolean isCaptureCtrlNumerics() {
+      return false;
+   }
 
    private boolean isAlwaysPropogateZoom(KeyDownEvent event) {
-      return isNeverHandleAndAlwaysPropagateZoomHotkeys() && event.isControlKeyDown() && (event.getNativeKeyCode() == KeyCodes.KEY_NUM_PLUS || event.getNativeKeyCode() == KeyCodes.KEY_NUM_MINUS || event.getNativeKeyCode() == KeyCodes.KEY_NUM_ZERO);
+      return isNeverHandleAndAlwaysPropagateZoomHotkeys() && event.isControlKeyDown() && (event.getNativeKeyCode() == KeyCodes.KEY_NUM_PLUS || event.getNativeKeyCode() == KeyCodes.KEY_NUM_MINUS || event.getNativeKeyCode() == KeyCodes.KEY_ZERO);
    }
+   
+
    
 }

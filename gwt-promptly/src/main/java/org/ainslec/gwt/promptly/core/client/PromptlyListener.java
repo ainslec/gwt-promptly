@@ -66,6 +66,15 @@ public interface PromptlyListener {
 	 */
    public void onControlCPressedInAllModes(PromptlyPanel panel);
    
+   /**
+    * If the user presses ctrl+any number in any mode, the event is registered here. No other events are fired for ctrl+[0-9].<br/><br/>
+    * IMPORTANT :: if {@link PromptlyPanel#isNeverHandleAndAlwaysPropagateZoomHotkeys()} is overrident to return true, then ctrl+0 will 
+    * not be handled by this method (will be propogated to browser). This method will only return values is {@link PromptlyPanel#isCaptureCtrlNumerics()} returns
+    * a true value.
+    * @param panel A non-null panel
+    */
+   public void onControlNumberPressedInAllModes(PromptlyPanel panel, int numeric);
+   
    
    /**
     * Fired when a double click event is fired. These events are only collected and fired if {@link PromptlyPanel#isCaptureDoubleClick()} is
