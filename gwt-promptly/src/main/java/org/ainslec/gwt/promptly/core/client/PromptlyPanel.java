@@ -406,7 +406,7 @@ public class PromptlyPanel extends Composite {
       return new ItemHandle(this, tag);
 	}
 	
-   public final ItemHandle appendPre (String paragraphText) {
+   public final ItemHandle appendPre (String paragraphText, String additionalStyle) {
       FlowPanel tag = null;
       if (paragraphText.length() == 0) {
          tag = new FlowPanel(BRElement.TAG);
@@ -414,6 +414,10 @@ public class PromptlyPanel extends Composite {
          tag = new FlowPanel(PreElement.TAG);
          if (getPreBlockClassName() != null) {
             tag.getElement().setAttribute("class", getPreBlockClassName());
+         }
+         
+         if (additionalStyle != null) {
+            tag.getElement().setAttribute("style",additionalStyle);
          }
          tag.getElement().setInnerText(paragraphText);
       }
@@ -455,8 +459,13 @@ public class PromptlyPanel extends Composite {
       appendAndScrollOrFocusAsAppropriate(gwtWidget);
    }
 
-   public final void appendPre(StyledBlock styledBlock, boolean withFormatting) {
+   public final void appendPre(StyledBlock styledBlock, boolean withFormatting, String additionalStyle) {
       final FlowPanel gwtWidget = styledBlock.toGwtWidget(this, withFormatting, true /* is pre block */, getPreBlockClassName());
+      
+      if (additionalStyle != null) {
+         gwtWidget.getElement().setAttribute("style",additionalStyle);
+      }
+      
       appendAndScrollOrFocusAsAppropriate(gwtWidget);
    }
    
