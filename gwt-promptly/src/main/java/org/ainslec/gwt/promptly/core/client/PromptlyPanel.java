@@ -359,14 +359,22 @@ public class PromptlyPanel extends Composite {
 
 
    /**
-    * Usage: PromptlyPanel.setCaretStyleVisible(PromptlyPanel.DEFAULT_CARET_STYLE_VISIBLE + "color:red;");
+    * Usage: PromptlyPanel.setCaretStyleVisible(PromptlyPanel.DEFAULT_CARET_STYLE_VISIBLE);
     * @param caretStyleVisible
     */
-   public void setCaretStyleVisible(String caretStyleVisible) {
+   private void setCaretStyleVisible(String caretStyleVisible) {
       if (caretStyleVisible != null) {
 		   _caret.getElement().setAttribute("style", caretStyleVisible);
 		}
       _caret.getElement().setClassName(null);
+   }
+   
+   
+   
+   String _additionalCaretStyles = null;
+   
+   public void setAdditionalStylesForCaret(String additionalCaretStyles) {
+      _additionalCaretStyles = additionalCaretStyles;
    }
 
    /**
@@ -545,19 +553,26 @@ public class PromptlyPanel extends Composite {
 		Scheduler.get().scheduleDeferred(cmd);
 	}
 	
+	boolean _isShowCaret = true;
+	
+	public boolean isShowCaret() {
+      return _isShowCaret;
+   }
+	
 	
 	public final void showCaret(boolean showCaret) {
+	   _isShowCaret = showCaret;
 	   if (showCaret) {
 	        String caretStyleVisible = getCaretStyleVisible();
 	         if (caretStyleVisible != null) {
-	            _caret.getElement().setAttribute("style", caretStyleVisible);
+	            _caret.getElement().setAttribute("style", caretStyleVisible + (_additionalCaretStyles == null ? "" : _additionalCaretStyles));
 	         } else {
 	            _caret.getElement().removeAttribute("style");
 	         }
 	   } else {
          String caretStyleInvisible = getCaretStyleInvisible();
          if (caretStyleInvisible != null) {
-            _caret.getElement().setAttribute("style", caretStyleInvisible);
+            _caret.getElement().setAttribute("style", caretStyleInvisible + (_additionalCaretStyles == null ? "" : _additionalCaretStyles));
          } else {
             _caret.getElement().removeAttribute("style");
          }
