@@ -84,4 +84,14 @@ public interface PromptlyListener {
     * @param clientY The client y position of the initial click / touch (the second click may be a few pixels away)
     */
    public void onMouseOrTouchDoubleClick(PromptlyPanel panel, int clientX, int clientY);
+
+   
+   /**
+    * 
+    * @param promptlyPanel
+    * @param x3
+    * @param y3
+    * @return If true, then also focus on command line, if false, then do not focus on command line (will not affect command line focus if command line is already focused)
+    */
+   public boolean onSingleClickPanelInCommandMode(PromptlyPanel promptlyPanel, int x3, int y3);
 }

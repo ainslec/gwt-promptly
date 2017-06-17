@@ -178,11 +178,17 @@ public class PromptlyPanel extends Composite {
 
          private void handleClickEvent(final int x3, final int y3) {
             _pendingClick = null;
+            
             if (_isCommandLineMode) {
-               focusOnCommandLine();
+               boolean focusOnCommandLine = _listener.onSingleClickPanelInCommandMode(PromptlyPanel.this, x3, y3);
+               
+               if (focusOnCommandLine) {
+                  focusOnCommandLine();
+               }
             } else {
                _listener.onClickInNonCommandMode(PromptlyPanel.this, x3, y3);
             }
+            
          }
 			
 		};
@@ -227,6 +233,8 @@ public class PromptlyPanel extends Composite {
 		
 		_commandLineWrapper.add(_caret);
 
+		
+		
 		_commandLineTextBox = new TextBox() {
 			@Override
 			protected void onAttach() {
@@ -243,6 +251,7 @@ public class PromptlyPanel extends Composite {
       _commandLineTextBox.getElement().setAttribute("autocorrect","off");
       _commandLineTextBox.getElement().setAttribute("autocapitalize","off");
       _commandLineTextBox.getElement().setAttribute("spellcheck","false");
+      _commandLineTextBox.getElement().setAttribute("type", "email");
 		
 		String textboxStyle = getDefaultCommandLineTextboxStyle();
 		
