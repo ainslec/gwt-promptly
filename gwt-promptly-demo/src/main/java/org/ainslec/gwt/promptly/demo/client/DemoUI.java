@@ -76,7 +76,7 @@ public class DemoUI extends Composite {
    public DemoUI() {
       //_top = new SplitLayoutPanel();
       
-      PromptlyListener listener = new DefaultPromptlyListener(){
+      PromptlyListener listener = new DefaultPromptlyListener() {
          
          @Override
          public void onKeypressedInNonCommandMode(PromptlyPanel panel, char c) {
