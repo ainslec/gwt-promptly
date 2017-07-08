@@ -51,22 +51,27 @@ import com.google.gwt.user.client.ui.TextBox;
  */
 public class PromptlyPanel extends Composite {
 
-   private static final int ACCEPTABLE_CLICK_EVENT_JUDDER_PIXELS = 6;
-   private static final int DOUBLE_CLICK_THRESHOLD_MILLIS        = 450; // Faster than Microsoft recommanded delay of 500 milliseconds
-   public static final String DEFAULT_TEXT_STYLE_CLASSNAME       = "gwtpromptly";
-   public static final String DEFAULT_BACKGROUND_STYLE_NAME      = "gwtpromptlybackground";
-   public static final String DEFAULT_TEXTBOX_STYLE              = "flex-grow:1;font-family:inherit;font-size:inherit;color:inherit; background-color: transparent; border: 0px solid;outline: none;text-shadow:inherit;";
-	public static final String DEFAULT_PROMPT_STYLE_VISIBLE       = "align-self:center;flex-grow:0;padding-right:4px;";
-	public static final String DEFAULT_PROMPT_STYLE_INVISIBLE     = "align-self:center;flex-grow:0;padding-right:4px;display:none;";
-	public static final boolean DEFAULT_SUPPORT_TAB_CAPTURE       = true;
+   private static final int    ACCEPTABLE_CLICK_EVENT_JUDDER_PIXELS = 6;
+   private static final int    DOUBLE_CLICK_THRESHOLD_MILLIS        = 450; // Faster than Microsoft recommanded delay of 500 milliseconds
+   public static final String  DEFAULT_TEXT_STYLE_CLASSNAME         = "gwtpromptly";
+   public static final String  DEFAULT_BACKGROUND_STYLE_NAME        = "gwtpromptlybackground";
+   public static final String  DEFAULT_TEXTBOX_STYLE                = "flex-grow:1;font-family:inherit;font-size:inherit;color:inherit; background-color: transparent; border: 0px solid;outline: none;text-shadow:inherit;";
+	public static final String  DEFAULT_PROMPT_STYLE_VISIBLE         = "align-self:center;flex-grow:0;padding-right:4px;";
+	public static final String  DEFAULT_PROMPT_STYLE_INVISIBLE       = "align-self:center;flex-grow:0;padding-right:4px;display:none;";
+	public static final boolean DEFAULT_SUPPORT_TAB_CAPTURE         = true;
 	
    private static PromptlyListener DEFAULT_LISTENER = new DefaultPromptlyListener();
    
-   private PromptlyListener             _listener           = DEFAULT_LISTENER;
+   private PromptlyListener          _listener           = DEFAULT_LISTENER;
 	private boolean                   _isCommandLineMode  = true;
 	private boolean                   _collectKeyEventsWhenInNonCommandLineMode   = true;
 	private boolean                   _collectMouseEventsWhenInNonCommandLineMode = true;
-
+   
+	private boolean                    _isTurnCaretIntoBackgroundColorWhenNotInCommandMode = true;
+	
+	private FlowPanel                 _promptZone;
+	private FlowPanel                 _promptZone1;
+	private FlowPanel                 _promptZone2;
    private FlowPanel                 _promptChar;
 	private FlowPanel                 _outerPanel;         // Panel that fills all available space
 	protected FlowPanel               _mainTextFlowDiv;    // Panel that has max width, but stretches to use all available height
@@ -83,6 +88,7 @@ public class PromptlyPanel extends Composite {
    
    private String _stowed = "";
    private String[] _commandCache = new String[]{};
+   private FlowPanel _zone2Image;
    
 	public PromptlyPanel() {
 		_outerPanel = new FlowPanel() {
@@ -219,22 +225,49 @@ public class PromptlyPanel extends Composite {
 		initWidget(_outerPanel);
 	}
 
+	
+	boolean _promptModeIsText = true;
+	
+	public void setPromptModeTextMode(boolean isText) {
+	   if (_promptModeIsText != isText) {
+         _promptZone1.getElement().setAttribute("style", isText ? "" : "display:none;");
+         _promptZone2.getElement().setAttribute("style",  isText ? "display:none;" : "");
+      }
+      _promptModeIsText = isText;
+	}
+	
+	public boolean isPromptModeText() {
+	   return _promptModeIsText;
+	}
+	
+	public void setPromptImage(String embeddedImageText, String style) {
+      _zone2Image.getElement().setAttribute("src", embeddedImageText == null ? "" : embeddedImageText);
+      _zone2Image.getElement().setAttribute("style", style);
+	}
+	
 
    protected final void initCommandLineTextEntryTextBox() {
 		_commandLineWrapper = new FlowPanel();
 		_commandLineWrapper.getElement().setAttribute("style", "display: flex;");
-
+		_promptZone = new FlowPanel(DivElement.TAG);
+		_promptZone1 = new FlowPanel(DivElement.TAG);
+		_promptZone2 = new FlowPanel(DivElement.TAG);
+		
+		{
+   		_zone2Image = new FlowPanel(ImageElement.TAG);
+   		_zone2Image.getElement().setAttribute("src",   "");
+   		_zone2Image.getElement().setAttribute("style", "");
+   		_promptZone2.add(_zone2Image);
+		}
+		
 		_promptChar = new FlowPanel(PreElement.TAG); // Allows the prompt to end in spaces
-		
 		String caretStyleVisible = getPromptStyleVisible();
-		
 		setPromptCharVisible(caretStyleVisible);
 		_promptChar.getElement().setInnerText(">");
-		
-		_commandLineWrapper.add(_promptChar);
-
-		
-		
+		_promptZone1.add(_promptChar);
+		_promptZone.add(_promptZone1);
+		_promptZone.add(_promptZone2);
+		_commandLineWrapper.add(_promptZone);
 		_commandLineTextBox = new TextBox() {
 			@Override
 			protected void onAttach() {
@@ -244,7 +277,6 @@ public class PromptlyPanel extends Composite {
 				}
 			}
 		};
-		
 		// Configurable ? 
 		
       _commandLineTextBox.getElement().setAttribute("autocomplete","off");
@@ -261,7 +293,7 @@ public class PromptlyPanel extends Composite {
 			
 			@Override
 			public void onKeyDown(KeyDownEvent event) {
-				
+			   _listener.onAnyKeyPressedInAnyMode();
 			   if (_collectKeyEventsWhenInNonCommandLineMode /* Collection of events can be halted */) {
 			      if ( isAlwaysPropogateZoom(event) ) {
 			      // Optionally ignore zoom events (but propogate), this is configurable
@@ -277,7 +309,6 @@ public class PromptlyPanel extends Composite {
    			      //event.stopPropagation();
    			   } else {
       				if (_isCommandLineMode) {
-      				   
                      int nativeKeyCode = event.getNativeKeyCode();
                      if (nativeKeyCode == KeyCodes.KEY_TAB) {
                         boolean isSupportsTabCapture = isSupportTabCapture();
@@ -443,7 +474,12 @@ public class PromptlyPanel extends Composite {
    }
 	
 	
-	public final ItemHandle appendEmbeddedImage(HAlignment imageAlignment, String embeddedImageText, String embeddedImageStyle, String description) {
+	public final ItemHandle appendEmbeddedImage(
+      HAlignment imageAlignment,
+      String embeddedImageText,
+      String embeddedImageStyle,
+      String description
+	) {
 	   FlowPanel outer = new FlowPanel(DivElement.TAG);
 	   String imageAlignment1 = "text-align:center;";
 	   if (imageAlignment == HAlignment.LEFT) {
@@ -538,8 +574,7 @@ public class PromptlyPanel extends Composite {
 			focusOnCommandLine();
 		}
 	}
-	
-	boolean _isTurnCaretIntoBackgroundColorWhenNotInCommandMode = true;
+
 	/**
 	 * 
 	 * @param commandLineMode Sets whether command line (prompt mode) is enabled or disabled.
@@ -593,6 +628,7 @@ public class PromptlyPanel extends Composite {
 	
 	boolean _isShowPromptChar = true;
    private String _blankCaretCss = null;
+   private boolean _hidePrompt;
 	
 	public boolean isShowPromptChar() {
       return _isShowPromptChar;
@@ -872,6 +908,12 @@ public class PromptlyPanel extends Composite {
 
    private boolean isAlwaysPropogateZoom(KeyDownEvent event) {
       return isNeverHandleAndAlwaysPropagateZoomHotkeys() && event.isControlKeyDown() && (event.getNativeKeyCode() == KeyCodes.KEY_NUM_PLUS || event.getNativeKeyCode() == KeyCodes.KEY_NUM_MINUS || event.getNativeKeyCode() == KeyCodes.KEY_ZERO);
+   }
+
+   public void setHidePrompt(boolean hidePrompt) {
+      _hidePrompt = hidePrompt;
+      _promptZone.getElement().setAttribute("style", _hidePrompt ? "display:none;align-self:center;" : "align-self:center;");
+      
    }
    
 

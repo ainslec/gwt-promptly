@@ -94,4 +94,6 @@ public interface PromptlyListener {
     * @return If true, then also focus on command line, if false, then do not focus on command line (will not affect command line focus if command line is already focused)
     */
    public boolean onSingleClickPanelInCommandMode(PromptlyPanel promptlyPanel, int x3, int y3);
+
+   public void onAnyKeyPressedInAnyMode();
 }
