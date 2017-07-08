@@ -497,18 +497,15 @@ public class PromptlyPanel extends Composite {
 	   return new ItemHandle(this, outer);
 	}
 	
-	public final void appendTiledLineImage(String srcImageText, String pixelationModeCssStyle) {
-	   
-	   
+	public final void appendTiledLineImage(String srcImageText, String additionalCssStyle) {
 	   FlowPanel outer = new FlowPanel(DivElement.TAG);
-	   outer.getElement().setAttribute("style", pixelationModeCssStyle + "line-height:100%;margin-top:12px;margin-bottom:6px; font-size:1px;width:100%;align:'center';background-image:url('"+srcImageText+"');"); //margin-bottom:6px;
+	   outer.getElement().setAttribute("style", additionalCssStyle + "line-height:100%;font-size:1px;width:100%;align:'center';background-image:url('"+srcImageText+"');"); //margin-bottom:6px;
 	   FlowPanel inner = new FlowPanel(ImageElement.TAG);
       inner.getElement().setAttribute("src",   srcImageText);
       inner.getElement().setAttribute("style", "visibility: hidden;");
       outer.add(inner);
       appendAndScrollOrFocusAsAppropriate(outer);
 	}
-	
 	
 	/**
 	 * 
