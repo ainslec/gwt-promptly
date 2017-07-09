@@ -95,5 +95,5 @@ public interface PromptlyListener {
     */
    public boolean onSingleClickPanelInCommandMode(PromptlyPanel promptlyPanel, int x3, int y3);
 
-   public void onAnyKeyPressedInAnyMode();
+   public void onAnyNonFunctionKeyPressedInAnyMode();
 }

@@ -97,9 +97,9 @@ public class StyledBlock {
       return _length;
    }
    
-   FlowPanel toGwtWidget(final PromptlyPanel promptlyPanel, boolean withFormatting, boolean isPreBlock, String outerClassOverride) {
+   void toGwtWidget(final PromptlyPanel promptlyPanel, FlowPanel outerWidget, boolean withFormatting, String outerClassOverride) {
 
-      FlowPanel outerWidget = new FlowPanel(isPreBlock ? PreElement.TAG : ParagraphElement.TAG /* <p> tag */ );
+      
 
       if (outerClassOverride != null) {
          outerWidget.getElement().setAttribute("class", outerClassOverride);
@@ -133,7 +133,6 @@ public class StyledBlock {
          }
          outerWidget.add(spanElement);
       }
-      return outerWidget;
    }
 
    

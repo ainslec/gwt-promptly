@@ -27,6 +27,7 @@ import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.OListElement;
 import com.google.gwt.dom.client.ParagraphElement;
 import com.google.gwt.dom.client.PreElement;
+import com.google.gwt.dom.client.SpanElement;
 import com.google.gwt.dom.client.UListElement;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyDownEvent;
@@ -240,9 +241,15 @@ public class PromptlyPanel extends Composite {
 	   return _promptModeIsText;
 	}
 	
+	String _promptImageText = "";
+	String _promptImageStyle = "";
+	
 	public void setPromptImage(String embeddedImageText, String style) {
-      _zone2Image.getElement().setAttribute("src", embeddedImageText == null ? "" : embeddedImageText);
-      _zone2Image.getElement().setAttribute("style", style);
+	   _promptImageText = embeddedImageText == null ? "" : embeddedImageText;
+	   _promptImageStyle = style;
+	   
+      _zone2Image.getElement().setAttribute("src", _promptImageText);
+      _zone2Image.getElement().setAttribute("style", _promptImageStyle);
 	}
 	
 
@@ -293,23 +300,37 @@ public class PromptlyPanel extends Composite {
 			
 			@Override
 			public void onKeyDown(KeyDownEvent event) {
-			   _listener.onAnyKeyPressedInAnyMode();
+			   
+			   int eventKeyCode = event.getNativeKeyCode();
+
+			   if (! (KeyCodes.KEY_CTRL == eventKeyCode ||
+			         eventKeyCode == KeyCodes.KEY_WIN_IME ||
+			         eventKeyCode == KeyCodes.KEY_MAC_FF_META ||
+			         eventKeyCode == 182 /* vol up */ ||
+			         eventKeyCode == 183  /* vol down */ ||
+			         KeyCodes.KEY_SHIFT == eventKeyCode ||
+			         KeyCodes.KEY_ALT == eventKeyCode ||
+			         (eventKeyCode >= KeyCodes.KEY_F1 && eventKeyCode <= KeyCodes.KEY_F12)) 
+			    ) {
+               _listener.onAnyNonFunctionKeyPressedInAnyMode();
+            }
+			   
 			   if (_collectKeyEventsWhenInNonCommandLineMode /* Collection of events can be halted */) {
 			      if ( isAlwaysPropogateZoom(event) ) {
 			      // Optionally ignore zoom events (but propogate), this is configurable
-			      } else if ((isCaptureCtrlNumerics() && event.isControlKeyDown()) && (event.getNativeKeyCode() >= KeyCodes.KEY_ZERO && event.getNativeKeyCode() <= KeyCodes.KEY_NINE)) {
+			      } else if ((isCaptureCtrlNumerics() && event.isControlKeyDown()) && (eventKeyCode >= KeyCodes.KEY_ZERO && eventKeyCode <= KeyCodes.KEY_NINE)) {
 			         // NOTE :: If always propogating zoon, then ctrl+0 is not handled in this block
-			         _listener.onControlNumberPressedInAllModes(PromptlyPanel.this, event.getNativeKeyCode() - KeyCodes.KEY_ZERO);
+			         _listener.onControlNumberPressedInAllModes(PromptlyPanel.this, eventKeyCode - KeyCodes.KEY_ZERO);
                   event.preventDefault();
                   event.stopPropagation();
-			      } else if (event.getNativeKeyCode() == KeyCodes.KEY_C && event.isControlKeyDown()) {
+			      } else if (eventKeyCode == KeyCodes.KEY_C && event.isControlKeyDown()) {
    			      _listener.onControlCPressedInAllModes(PromptlyPanel.this);
    			      // We do not stop propogation (by default) as ctrl+c is handy for copy paste
    			      // May make this configurable later.
    			      //event.stopPropagation();
    			   } else {
       				if (_isCommandLineMode) {
-                     int nativeKeyCode = event.getNativeKeyCode();
+                     int nativeKeyCode = eventKeyCode;
                      if (nativeKeyCode == KeyCodes.KEY_TAB) {
                         boolean isSupportsTabCapture = isSupportTabCapture();
                         if (isSupportsTabCapture) {
@@ -355,7 +376,7 @@ public class PromptlyPanel extends Composite {
                      }
       				} else {
       					// event can propogate
-      					int nativeKeyCode = event.getNativeKeyCode();
+      					int nativeKeyCode = eventKeyCode;
       					char keyCode = 0;
       					
       					// TODO :: Support all keys
@@ -376,9 +397,9 @@ public class PromptlyPanel extends Composite {
 			   } else {
 			      if ( isAlwaysPropogateZoom(event) ) {
 			         // Do not stop propogation
-               } else if ((isCaptureCtrlNumerics() && event.isControlKeyDown()) && (event.getNativeKeyCode() >= KeyCodes.KEY_ZERO && event.getNativeKeyCode() <= KeyCodes.KEY_NINE)) {
+               } else if ((isCaptureCtrlNumerics() && event.isControlKeyDown()) && (eventKeyCode >= KeyCodes.KEY_ZERO && eventKeyCode <= KeyCodes.KEY_NINE)) {
                   // NOTE :: If always propogating zoon, then ctrl+0 is not handled in this block
-                  _listener.onControlNumberPressedInAllModes(PromptlyPanel.this, event.getNativeKeyCode() - KeyCodes.KEY_ZERO);
+                  _listener.onControlNumberPressedInAllModes(PromptlyPanel.this, eventKeyCode - KeyCodes.KEY_ZERO);
                   event.preventDefault();
                   event.stopPropagation();
 			      } else {
@@ -513,18 +534,52 @@ public class PromptlyPanel extends Composite {
 	 * @param withFormatting If false, then styles will be ignored.
 	 */
    public final void append(StyledBlock styledBlock, boolean withFormatting) {
-      final FlowPanel gwtWidget = styledBlock.toGwtWidget(this, withFormatting, false /* is pre block */, null /* outer style override */);
-      appendAndScrollOrFocusAsAppropriate(gwtWidget);
+      FlowPanel outerWidget = new FlowPanel(ParagraphElement.TAG /* <p> tag */ );
+      styledBlock.toGwtWidget(this, outerWidget, withFormatting, null /* outer style override */);
+      appendAndScrollOrFocusAsAppropriate(outerWidget);
+   }
+   
+   public final void mirror(StyledBlock styledBlock, boolean withFormatting) {
+      FlowPanel gwtWidget = null;
+
+      if (isPromptModeText() || _promptImageText == null || _promptImageText.length() == 0) {
+         FlowPanel commandLineMirrorPart = new FlowPanel(ParagraphElement.TAG /* <p> tag */ );
+         styledBlock.toGwtWidget(this, commandLineMirrorPart, withFormatting, null /* outer style override */);
+         
+         gwtWidget = commandLineMirrorPart;
+      } else {
+         gwtWidget = new FlowPanel(ParagraphElement.TAG);
+         gwtWidget.getElement().setAttribute("style", "align-self:center;display:flex;");
+         FlowPanel imagePart = new FlowPanel(ImageElement.TAG);
+         imagePart.getElement().setAttribute("src",   _promptImageText);
+         imagePart.getElement().setAttribute("style", _promptImageStyle);
+         gwtWidget.add(imagePart);
+         
+         // Superspan
+         {
+            FlowPanel ss = new FlowPanel(SpanElement.TAG);
+            ss.getElement().setAttribute("style", "align-self:center;");
+            styledBlock.toGwtWidget(this, ss, withFormatting, null /* outer style override */);
+            gwtWidget.add(ss);
+         }
+         //styledBlock.toGwtWidget(this, gwtWidget, withFormatting, null /* outer style override */);
+      }
+      
+      if (gwtWidget != null) {
+         appendAndScrollOrFocusAsAppropriate(gwtWidget);
+      }
+      
    }
 
    public final void appendPre(StyledBlock styledBlock, boolean withFormatting, String additionalStyle) {
-      final FlowPanel gwtWidget = styledBlock.toGwtWidget(this, withFormatting, true /* is pre block */, getPreBlockClassName());
+      FlowPanel outerWidget = new FlowPanel(PreElement.TAG );
+      styledBlock.toGwtWidget(this, outerWidget, withFormatting, getPreBlockClassName());
       
       if (additionalStyle != null) {
-         gwtWidget.getElement().setAttribute("style",additionalStyle);
+         outerWidget.getElement().setAttribute("style",additionalStyle);
       }
       
-      appendAndScrollOrFocusAsAppropriate(gwtWidget);
+      appendAndScrollOrFocusAsAppropriate(outerWidget);
    }
    
    private final void appendAndScrollOrFocusAsAppropriate(FlowPanel tag) {
