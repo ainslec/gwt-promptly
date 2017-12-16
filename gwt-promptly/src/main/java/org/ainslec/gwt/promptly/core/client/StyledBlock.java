@@ -82,7 +82,11 @@ public class StyledBlock {
             sb.append("<span style=\"");
             sb.append(SafeHtmlUtils.htmlEscape(style));
             sb.append("\">");
-            sb.append(SafeHtmlUtils.htmlEscape(text));
+            if (text != null && " ".equals(text)) {
+               sb.append("&nbsp;");
+            } else {
+               sb.append(SafeHtmlUtils.htmlEscape(text));
+            }
             sb.append("</span>");
          } else {
             sb.append(SafeHtmlUtils.htmlEscape(text));
@@ -97,9 +101,36 @@ public class StyledBlock {
       return _length;
    }
    
-   void toGwtWidget(final PromptlyPanel promptlyPanel, FlowPanel outerWidget, boolean withFormatting, String outerClassOverride) {
-
+   public class Hyperlink implements ClickHandler {
+      private long _hyperlinkId;
+      private PromptlyPanel promptlyPanel;
+      private ItemListener callback;
+      private String text;
       
+      public Hyperlink(final PromptlyPanel promptlyPanel, long hyperlinkId, ItemListener callback, String text) {
+         this.promptlyPanel = promptlyPanel;
+         _hyperlinkId= hyperlinkId;
+         this.callback = callback;
+         this.text = text;
+      }
+      
+      @Override
+      public void onClick(ClickEvent event) {
+         boolean isBlockedRange = _hyperlinkId < promptlyPanel.getBlockHyperlinkBelowId();
+         boolean isAllLinksBlocked = promptlyPanel.isBlockingHyperlinks();
+         if ((!isAllLinksBlocked) && (!isBlockedRange)) {
+            callback.onClick(promptlyPanel, text, event.getClientX(), event.getClientY());
+         }
+      }
+   }
+   
+   
+   void toGwtWidget(
+      final PromptlyPanel promptlyPanel,
+      FlowPanel outerWidget,
+      boolean withFormatting,
+      String outerClassOverride
+   ) {
 
       if (outerClassOverride != null) {
          outerWidget.getElement().setAttribute("class", outerClassOverride);
@@ -119,15 +150,9 @@ public class StyledBlock {
          final ItemListener callback = paragraphItem.getCallback();
          
          if (callback != null) {
-            ClickHandler handler = new ClickHandler() {
-               @Override
-               public void onClick(ClickEvent event) {
-                  if (!promptlyPanel.isBlockingHyperlinks()) {
-                     callback.onClick(promptlyPanel, text, event.getClientX(), event.getClientY());
-                  }
-               }
-            };
-            spanElement.addDomHandler(handler , ClickEvent.getType());
+            
+            Hyperlink hl = new Hyperlink(promptlyPanel, promptlyPanel.getNextHyperlinkIdAndIncrement(), callback, text);
+            spanElement.addDomHandler(hl , ClickEvent.getType());
             spanElement.getElement().setAttribute("onMouseOver", "this.style.fontWeight='normal'");
             spanElement.getElement().setAttribute("onMouseOut",  "this.style.fontWeight='normal'");
          }

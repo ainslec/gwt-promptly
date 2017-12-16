@@ -82,7 +82,7 @@ public class PromptlyPanel extends Composite {
    private int _commandCacheLimit               = 0;
    private int _commandCacheNextInsertionIndex  = 0;
    private boolean _cacheOverflowed             = false;
-   private boolean _blockingHyperlinks;
+   
    
    private int _commandCacheUserCursorIndex     = -1; // The is the next index to be displayed to the user
    private int _commandCacheUserCursorLimit     = -1; // This is the limit of the cursor, so we don't loop around indefinately
@@ -90,6 +90,31 @@ public class PromptlyPanel extends Composite {
    private String _stowed = "";
    private String[] _commandCache = new String[]{};
    private FlowPanel _zone2Image;
+   
+   private boolean _blockingHyperlinks;
+   private long _nextHyperlinkId        = 0;
+   private long _blockHyperlinkBelowId  = 0;
+   
+   public long getNextHyperlinkIdAndIncrement() {
+      return _nextHyperlinkId++;
+   }
+   
+   public long getNextHyperlinkId() {
+      return _nextHyperlinkId;
+   }
+   
+   public void setBlockHyperlinkBelowId(long blockHyperlinkBelowId) {
+      _blockHyperlinkBelowId = blockHyperlinkBelowId;
+   }
+   
+   public long getBlockHyperlinkBelowId() {
+      return _blockHyperlinkBelowId;
+   }
+   
+   public void neutralizeVisibleHyperlinks() {
+      long next = getNextHyperlinkId();
+      setBlockHyperlinkBelowId(next);
+   }
    
 	public PromptlyPanel() {
 		_outerPanel = new FlowPanel() {
@@ -248,7 +273,7 @@ public class PromptlyPanel extends Composite {
 	   _promptImageText = embeddedImageText == null ? "" : embeddedImageText;
 	   _promptImageStyle = style;
 	   
-      _zone2Image.getElement().setAttribute("src", _promptImageText);
+      _zone2Image.getElement().setAttribute("src",   _promptImageText);
       _zone2Image.getElement().setAttribute("style", _promptImageStyle);
 	}
 	
@@ -263,7 +288,7 @@ public class PromptlyPanel extends Composite {
 		{
    		_zone2Image = new FlowPanel(ImageElement.TAG);
    		_zone2Image.getElement().setAttribute("src",   "");
-   		_zone2Image.getElement().setAttribute("style", "");
+   		_zone2Image.getElement().setAttribute("style", "display:none;");
    		_promptZone2.add(_zone2Image);
 		}
 		
@@ -539,6 +564,19 @@ public class PromptlyPanel extends Composite {
       appendAndScrollOrFocusAsAppropriate(outerWidget);
    }
    
+
+   public final void appendPre(StyledBlock styledBlock, boolean withFormatting, String additionalStyle) {
+      FlowPanel outerWidget = new FlowPanel(PreElement.TAG );
+      styledBlock.toGwtWidget(this, outerWidget, withFormatting, getPreBlockClassName());
+      
+      if (additionalStyle != null) {
+         outerWidget.getElement().setAttribute("style",additionalStyle);
+      }
+      
+      appendAndScrollOrFocusAsAppropriate(outerWidget);
+   }
+   
+   
    public final void mirror(StyledBlock styledBlock, boolean withFormatting) {
       FlowPanel gwtWidget = null;
 
@@ -550,10 +588,13 @@ public class PromptlyPanel extends Composite {
       } else {
          gwtWidget = new FlowPanel(ParagraphElement.TAG);
          gwtWidget.getElement().setAttribute("style", "align-self:center;display:flex;");
-         FlowPanel imagePart = new FlowPanel(ImageElement.TAG);
-         imagePart.getElement().setAttribute("src",   _promptImageText);
-         imagePart.getElement().setAttribute("style", _promptImageStyle);
-         gwtWidget.add(imagePart);
+         
+         {
+            FlowPanel imagePart = new FlowPanel(ImageElement.TAG);
+            imagePart.getElement().setAttribute("src",   _promptImageText);
+            imagePart.getElement().setAttribute("style", _promptImageStyle);
+            gwtWidget.add(imagePart);
+         }
          
          // Superspan
          {
@@ -570,18 +611,9 @@ public class PromptlyPanel extends Composite {
       }
       
    }
-
-   public final void appendPre(StyledBlock styledBlock, boolean withFormatting, String additionalStyle) {
-      FlowPanel outerWidget = new FlowPanel(PreElement.TAG );
-      styledBlock.toGwtWidget(this, outerWidget, withFormatting, getPreBlockClassName());
-      
-      if (additionalStyle != null) {
-         outerWidget.getElement().setAttribute("style",additionalStyle);
-      }
-      
-      appendAndScrollOrFocusAsAppropriate(outerWidget);
-   }
    
+
+
    private final void appendAndScrollOrFocusAsAppropriate(FlowPanel tag) {
       int numWidgets = _mainTextFlowDiv.getWidgetCount();
       if (numWidgets == 0) {
@@ -967,7 +999,8 @@ public class PromptlyPanel extends Composite {
       _promptZone.getElement().setAttribute("style", _hidePrompt ? "display:none;align-self:center;" : "align-self:center;");
       
    }
-   
+
+
 
    
 }
