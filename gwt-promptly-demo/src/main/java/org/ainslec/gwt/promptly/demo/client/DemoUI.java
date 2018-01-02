@@ -24,7 +24,6 @@ import org.ainslec.gwt.promptly.core.client.PromptlyPanel;
 import org.ainslec.gwt.promptly.core.client.StyledBlock;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.SplitLayoutPanel;
 
 /**
  * A sample command application to demonstrate use of GWT Promptly Command Line Panels
@@ -141,15 +140,7 @@ public class DemoUI extends Composite {
       _leftConsole  = new PromptlyPanel(){public String getTextAdditionalStyles() {return "font-size:1.4em;";}}
          .setTextEntryListener(listener).setCommandCacheLimit(HISTORY_CACHE_LIMIT);
          
-      // We override the font size here (we can also adjust via css style override)
-//      _rightConsole = new PromptlyPanel(){public String getTextAdditionalStyles() {return "font-size:1.4em;";}}
-//         .setTextEntryListener(listener).setCommandCacheLimit(HISTORY_CACHE_LIMIT);
-      
       _leftConsole.append(CLEARSCREEN_ADVICE);
-//      _rightConsole.append(CLEARSCREEN_ADVICE);
-      
-//      _top.addWest(_leftConsole, 700);
-//      _top.add(_rightConsole);
       
       initWidget(_leftConsole);
    }
